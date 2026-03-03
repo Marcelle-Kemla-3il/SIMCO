@@ -1,0 +1,22 @@
+# Backend
+backend/__pycache__
+backend/venv
+backend/.env
+backend/*.pyc
+backend/.pytest_cache
+backend/data/training/*.jsonl
+backend/data/models/*.pkl
+
+# Frontend
+quiz-frontend/node_modules
+quiz-frontend/dist
+quiz-frontend/.env
+quiz-frontend/.vite
+
+# General
+.git
+.gitignore
+*.log
+*.md
+!README.md
+.DS_Store

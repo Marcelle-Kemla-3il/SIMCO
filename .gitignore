@@ -1,0 +1,47 @@
+# SIMCO Project
+# Cognitive evaluation platform with behavioral analysis
+
+# Ignore ssimco folder (archived - not using Python vision code)
+_archive_ssimco/
+
+# Backend
+backend/__pycache__/
+backend/*.pyc
+backend/venv/
+backend/env/
+backend/.env
+backend/data/training/*.jsonl
+backend/data/training/*.csv
+backend/data/models/*.pkl
+backend/data/models/*.joblib
+backend/*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation builds
+docs/_build/

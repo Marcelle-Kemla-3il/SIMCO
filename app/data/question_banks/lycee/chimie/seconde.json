@@ -1,0 +1,165 @@
+{
+  "questions": [
+    {
+      "question": "Quelle est la formule brute du dioxyde de carbone ?",
+      "choices": ["CO₂", "O₂", "H₂O", "CH₄"],
+      "correct_answer": "A",
+      "explanation": "Le dioxyde de carbone est constitué d’un atome de carbone et de deux atomes d’oxygène.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Parmi ces espèces, laquelle est un ion ?",
+      "choices": ["Na⁺", "Na", "Na₂", "NaCl (solide)"],
+      "correct_answer": "A",
+      "explanation": "Na⁺ porte une charge positive: c’est un ion.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle espèce est une molécule diatomique (à l’état gazeux) ?",
+      "choices": ["O₂", "CO₂", "H₂O", "NaCl"],
+      "correct_answer": "A",
+      "explanation": "Le dioxygène est une molécule diatomique.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle grandeur caractérise le nombre de protons dans un noyau ?",
+      "choices": ["Le nombre de masse A", "Le numéro atomique Z", "Le nombre de neutrons N", "La valence"],
+      "correct_answer": "B",
+      "explanation": "Le numéro atomique Z est le nombre de protons.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quel est le pH d’une solution neutre à 25°C ?",
+      "choices": ["0", "7", "10", "14"],
+      "correct_answer": "B",
+      "explanation": "À 25°C, une solution neutre a un pH de 7.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Dans une formule chimique, l’indice “₂” (ex: H₂O) indique :",
+      "choices": ["La charge", "Le nombre d’atomes", "La masse molaire", "La température"],
+      "correct_answer": "B",
+      "explanation": "Un indice indique combien d’atomes de cet élément sont présents.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quel matériel permet de mesurer précisément 25,0 mL d’une solution ?",
+      "choices": ["Bécher", "Éprouvette graduée", "Pipette jaugée", "Erlenmeyer"],
+      "correct_answer": "C",
+      "explanation": "La pipette jaugée est conçue pour un volume unique avec précision.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "La dissolution de NaCl dans l’eau conduit principalement à :",
+      "choices": ["NaCl(aq) sans ions", "Na⁺(aq) et Cl⁻(aq)", "Na₂(aq) et Cl₂(aq)", "Na(s) et Cl(g)"],
+      "correct_answer": "B",
+      "explanation": "Le sel se dissocie en ions hydratés.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle est l’unité de la quantité de matière ?",
+      "choices": ["g", "mol", "L", "Pa"],
+      "correct_answer": "B",
+      "explanation": "La quantité de matière s’exprime en mole (mol).",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Parmi ces mélanges, lequel est homogène ?",
+      "choices": ["Eau + huile", "Eau + sable", "Air", "Eau + limaille de fer"],
+      "correct_answer": "C",
+      "explanation": "L’air est un mélange homogène de gaz.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle relation exprime la concentration molaire \(C\\) ?",
+      "choices": ["C = m/V", "C = n/V", "C = V/n", "C = n·V"],
+      "correct_answer": "B",
+      "explanation": "La concentration molaire est la quantité de matière par volume.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quelle est la masse molaire de H₂O (en g/mol) ?",
+      "choices": ["16", "18", "20", "22"],
+      "correct_answer": "B",
+      "explanation": "M(H₂O)=2×1 + 16 = 18 g/mol.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Combien de moles contient 9 g d’eau ?",
+      "choices": ["0,25 mol", "0,5 mol", "1 mol", "2 mol"],
+      "correct_answer": "B",
+      "explanation": "n = m/M = 9/18 = 0,5 mol.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Lors d’une dilution, quelle grandeur reste constante ?",
+      "choices": ["Le volume", "La concentration", "La quantité de soluté", "La masse du solvant"],
+      "correct_answer": "C",
+      "explanation": "La quantité de soluté ne change pas lors d’une dilution.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quel est le nombre d’électrons d’un atome neutre de sodium (Z=11) ?",
+      "choices": ["10", "11", "12", "22"],
+      "correct_answer": "B",
+      "explanation": "Un atome neutre a autant d’électrons que de protons: 11.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quel est le rôle d’un indicateur coloré acide–base ?",
+      "choices": ["Mesurer la masse", "Mesurer le volume", "Estimer le pH par changement de couleur", "Refroidir la solution"],
+      "correct_answer": "C",
+      "explanation": "Un indicateur change de couleur selon le pH.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quelle proposition décrit une transformation chimique ?",
+      "choices": ["Fusion de la glace", "Évaporation de l’eau", "Formation de dioxyde de carbone lors d’une combustion", "Dissolution du sucre"],
+      "correct_answer": "C",
+      "explanation": "Une nouvelle espèce chimique est formée: transformation chimique.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Dans CO₂, le nombre total d’atomes est :",
+      "choices": ["1", "2", "3", "4"],
+      "correct_answer": "C",
+      "explanation": "CO₂ contient 1 C + 2 O = 3 atomes.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quelle est la charge totale d’un ion sulfate SO₄²⁻ ?",
+      "choices": ["-1", "-2", "+2", "0"],
+      "correct_answer": "B",
+      "explanation": "L’exposant 2− indique une charge -2.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "On prépare 0,50 L d’une solution à 0,20 mol/L. Quelle quantité de matière de soluté faut-il ?",
+      "choices": ["0,10 mol", "0,20 mol", "0,25 mol", "0,40 mol"],
+      "correct_answer": "A",
+      "explanation": "n = C×V = 0,20×0,50 = 0,10 mol.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "On dissout 5,85 g de NaCl (M=58,5 g/mol). Combien de moles de NaCl obtient-on ?",
+      "choices": ["0,01 mol", "0,10 mol", "1,00 mol", "10,0 mol"],
+      "correct_answer": "B",
+      "explanation": "n = m/M = 5,85/58,5 = 0,10 mol.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Quel volume d’eau faut-il ajouter pour diluer 100 mL d’une solution à 1,0 mol/L en une solution à 0,20 mol/L ?",
+      "choices": ["100 mL", "200 mL", "400 mL", "500 mL"],
+      "correct_answer": "C",
+      "explanation": "C₁V₁=C₂V₂ ⇒ V₂ = (1,0×100)/0,20 = 500 mL, donc on ajoute 400 mL.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Dans une réaction, la conservation de la masse est assurée si :",
+      "choices": ["La température reste constante", "Le système est fermé", "La solution est colorée", "Le pH est neutre"],
+      "correct_answer": "B",
+      "explanation": "En système fermé, rien ne s’échappe: masse totale conservée.",
+      "difficulty": "hard"
+    }
+  ]
+}

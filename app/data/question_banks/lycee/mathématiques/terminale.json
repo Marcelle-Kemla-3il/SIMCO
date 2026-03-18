@@ -1,0 +1,24 @@
+{
+  "questions": [
+    { "question": "Calculer la dérivée de f(x)=x³.", "choices": ["x²", "2x", "3x²", "3x³"], "correct_answer": "C", "explanation": "f'(x)=3x².", "difficulty": "easy" },
+    { "question": "Calculer la dérivée de f(x)=2x²−5x.", "choices": ["4x−5", "2x−5", "4x+5", "x²−5"], "correct_answer": "A", "explanation": "(2x²)'=4x et (−5x)'=−5.", "difficulty": "easy" },
+    { "question": "La primitive de f(x)=3 est :", "choices": ["3x + C", "x³ + C", "ln(x) + C", "1/x + C"], "correct_answer": "A", "explanation": "∫3 dx = 3x + C.", "difficulty": "easy" },
+    { "question": "Calculer: ln(e²) =", "choices": ["1", "2", "e", "e²"], "correct_answer": "B", "explanation": "ln(e^a)=a.", "difficulty": "easy" },
+    { "question": "Résoudre: e^x = 1.", "choices": ["x=0", "x=1", "x=−1", "aucune solution"], "correct_answer": "A", "explanation": "e^0=1.", "difficulty": "easy" },
+
+    { "question": "Calculer la limite de (x²−1)/(x−1) quand x→1.", "choices": ["0", "1", "2", "∞"], "correct_answer": "C", "explanation": "Factoriser: (x−1)(x+1)/(x−1)=x+1→2.", "difficulty": "medium" },
+    { "question": "Résoudre: x² − 4x + 4 = 0.", "choices": ["x=0", "x=2", "x=−2", "x=1"], "correct_answer": "B", "explanation": "(x−2)²=0 ⇒ x=2.", "difficulty": "medium" },
+    { "question": "Une suite géométrique a u1=3 et q=2. Alors u4 vaut :", "choices": ["12", "18", "24", "48"], "correct_answer": "C", "explanation": "u4=u1·q³=3·8=24.", "difficulty": "medium" },
+    { "question": "Calculer ∫0^2 x dx.", "choices": ["1", "2", "3", "4"], "correct_answer": "B", "explanation": "∫x dx = x²/2, donc [x²/2]_0^2 = 2.", "difficulty": "medium" },
+    { "question": "Résoudre: ln(x)=0.", "choices": ["x=0", "x=1", "x=e", "x=−1"], "correct_answer": "B", "explanation": "ln(1)=0.", "difficulty": "medium" },
+    { "question": "Calculer: (1+i)² =", "choices": ["1+2i", "2i", "2", "−1"], "correct_answer": "B", "explanation": "(1+i)²=1+2i+i²=2i.", "difficulty": "medium" },
+
+    { "question": "Déterminer le signe de f(x)=x²+1 sur ℝ.", "choices": ["Toujours positif", "Toujours négatif", "Nul en x=0", "Change de signe"], "correct_answer": "A", "explanation": "x²≥0 donc x²+1≥1.", "difficulty": "hard" },
+    { "question": "Résoudre: sin(x)=0 sur [0,2π].", "choices": ["0 et π", "π/2 et 3π/2", "π/6 et 5π/6", "π/4 et 3π/4"], "correct_answer": "A", "explanation": "sin(x)=0 pour x=0, π, 2π; sur [0,2π] inclut 0, π, 2π.", "difficulty": "hard" },
+    { "question": "Résoudre: cos(x)=1/2 sur [0,2π].", "choices": ["π/3 et 5π/3", "π/6 et 11π/6", "π/2 et 3π/2", "0 et π"], "correct_answer": "A", "explanation": "cos=1/2 aux angles ±π/3.", "difficulty": "hard" },
+    { "question": "Calculer la variance d'une série 2, 2, 4, 4 (variance population).", "choices": ["0", "1", "2", "4"], "correct_answer": "B", "explanation": "Moyenne=3; carrés des écarts:1,1,1,1; variance=1.", "difficulty": "hard" },
+    { "question": "Soit P(X)=2X³−X²+1. Calculer P(1).", "choices": ["0", "1", "2", "3"], "correct_answer": "C", "explanation": "2−1+1=2.", "difficulty": "hard" },
+    { "question": "Résoudre: 2^x = 8.", "choices": ["x=2", "x=3", "x=4", "x=8"], "correct_answer": "B", "explanation": "8=2³ donc x=3.", "difficulty": "hard" },
+    { "question": "Calculer la somme des 5 premiers termes de la suite arithmétique u1=2, r=3.", "choices": ["25", "30", "35", "40"], "correct_answer": "D", "explanation": "Termes:2,5,8,11,14; somme=40.", "difficulty": "hard" }
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "questions": [
+    {
+      "question": "Quelle espèce est un acide fort en solution aqueuse ?",
+      "choices": ["HCl", "CH3COOH", "NH3", "H2O"],
+      "correct_answer": "A",
+      "explanation": "HCl est un acide fort (dissociation quasi totale).",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quel est le pH d'une solution où [H+] = 1,0×10⁻⁵ mol/L ?",
+      "choices": ["5", "9", "7", "3"],
+      "correct_answer": "A",
+      "explanation": "pH = −log10([H+]) = 5.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "La base conjuguée de H2CO3 est :",
+      "choices": ["CO3²⁻", "HCO3⁻", "H3CO3⁺", "CO2"],
+      "correct_answer": "B",
+      "explanation": "H2CO3 cède un proton pour donner HCO3−.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle transformation correspond à une oxydation ?",
+      "choices": ["Gain d'électrons", "Perte d'électrons", "Gain de neutrons", "Perte de protons"],
+      "correct_answer": "B",
+      "explanation": "Oxydation = perte d'électrons.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle relation est correcte pour une dilution ?",
+      "choices": ["C1V1 = C2V2", "C1+C2 = V1+V2", "C1/V1 = C2/V2", "C1V2 = C2V1²"],
+      "correct_answer": "A",
+      "explanation": "La quantité de soluté se conserve lors d'une dilution.",
+      "difficulty": "easy"
+    },
+
+    {
+      "question": "À 25°C, si pH = 11, quelle est la concentration en ions OH− ?",
+      "choices": ["10⁻¹ mol/L", "10⁻³ mol/L", "10⁻¹¹ mol/L", "10⁻⁷ mol/L"],
+      "correct_answer": "B",
+      "explanation": "pOH = 14 − pH = 3 ⇒ [OH−]=10⁻³ mol/L.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quelle affirmation est correcte pour une réaction totale ?",
+      "choices": ["K ≈ 1", "K >> 1", "K << 1", "K = 0"],
+      "correct_answer": "B",
+      "explanation": "Si K est très grand, l'équilibre est très déplacé vers les produits (quasi-total).",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quel est le rôle d'un catalyseur ?",
+      "choices": ["Augmenter la quantité de produit à l'équilibre", "Diminuer l'énergie d'activation", "Changer le signe de ΔH", "Consommer les réactifs"],
+      "correct_answer": "B",
+      "explanation": "Un catalyseur accélère la réaction en abaissant l'énergie d'activation, sans modifier l'équilibre.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Pour la réaction 2A ⇌ B, l'expression de Kc est :",
+      "choices": ["[A]²/[B]", "[B]/[A]²", "[A]/[B]²", "[B]²/[A]"],
+      "correct_answer": "B",
+      "explanation": "Kc = [B] / [A]².",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quel est l'ordre global d'une loi de vitesse v = k[A]²[B] ?",
+      "choices": ["1", "2", "3", "4"],
+      "correct_answer": "C",
+      "explanation": "Ordre global = 2 + 1 = 3.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quel couple correspond à la réaction de réduction de Cu²⁺ ?",
+      "choices": ["Cu/Cu²⁺", "Cu²⁺/Cu", "Cu⁺/Cu²⁺", "Cu/Cu⁺"],
+      "correct_answer": "B",
+      "explanation": "Réduction: Cu²⁺ + 2e− → Cu.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quelle grandeur est conservée dans un circuit en série ?",
+      "choices": ["La tension", "L'intensité", "La résistance", "La puissance"],
+      "correct_answer": "B",
+      "explanation": "En série, le courant (intensité) est le même partout.",
+      "difficulty": "medium"
+    },
+
+    {
+      "question": "On prépare 500 mL d'une solution de NaCl à 0,20 mol/L. Quelle quantité de matière faut-il ?",
+      "choices": ["0,10 mol", "0,20 mol", "1,0 mol", "2,5 mol"],
+      "correct_answer": "A",
+      "explanation": "n = C×V = 0,20×0,500 = 0,10 mol.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "On dissout 2,00 g de NaOH (M=40,0 g/mol). Quelle est la quantité de matière ?",
+      "choices": ["0,050 mol", "0,10 mol", "0,20 mol", "1,0 mol"],
+      "correct_answer": "A",
+      "explanation": "n = m/M = 2,00/40,0 = 0,050 mol.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Pour une pile, E°pile = E°cathode − E°anode. Si E°cathode=+0,80 V et E°anode=−0,40 V, E°pile vaut :",
+      "choices": ["0,40 V", "1,20 V", "−1,20 V", "−0,40 V"],
+      "correct_answer": "B",
+      "explanation": "E° = 0,80 − (−0,40) = 1,20 V.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Une solution tampon est efficace si :",
+      "choices": ["pH très loin de pKa", "pH ≈ pKa", "la solution est très diluée", "il n'y a pas d'eau"],
+      "correct_answer": "B",
+      "explanation": "Un tampon est le plus efficace quand pH est proche de pKa.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Quelle est la variation d'enthalpie ΔH pour une réaction exothermique ?",
+      "choices": ["ΔH > 0", "ΔH < 0", "ΔH = 0", "ΔH dépend uniquement de K"],
+      "correct_answer": "B",
+      "explanation": "Exothermique ⇒ libère de l'énergie ⇒ ΔH < 0.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Si une réaction a une énergie d'activation élevée, alors à température ambiante elle est généralement :",
+      "choices": ["Très rapide", "Très lente", "Impossible", "Toujours totale"],
+      "correct_answer": "B",
+      "explanation": "Une grande énergie d'activation limite la vitesse à T donnée.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Pour un titrage d'un acide faible par une base forte, au point d'équivalence le pH est en général :",
+      "choices": ["< 7", "= 7", "> 7", "impossible à prévoir"],
+      "correct_answer": "C",
+      "explanation": "Le sel formé (base conjuguée) hydrolyse et rend la solution basique.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Si on double la concentration de A dans v = k[A]², la vitesse est multipliée par :",
+      "choices": ["2", "4", "8", "16"],
+      "correct_answer": "B",
+      "explanation": "v ∝ [A]² donc ×2 ⇒ ×4.",
+      "difficulty": "hard"
+    }
+  ]
+}

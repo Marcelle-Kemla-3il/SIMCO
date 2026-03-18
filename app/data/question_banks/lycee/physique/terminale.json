@@ -1,0 +1,27 @@
+{
+  "questions": [
+    { "question": "Quelle relation relie la charge q, l’intensité I et le temps t ?", "choices": ["q=It", "q=I/t", "q=t/I", "q=I+t"], "correct_answer": "A", "explanation": "q = I×t.", "difficulty": "easy" },
+    { "question": "L’unité de la charge électrique est :", "choices": ["A", "V", "C", "Ω"], "correct_answer": "C", "explanation": "Charge en coulomb (C).", "difficulty": "easy" },
+    { "question": "Quelle est l’énergie d’un photon \(E\\) en fonction de la fréquence \(f\\) ?", "choices": ["E=hf", "E=h/f", "E=fc", "E=mc²"], "correct_answer": "A", "explanation": "E = h f.", "difficulty": "easy" },
+    { "question": "Dans le vide, la relation entre c, λ et f est :", "choices": ["c=f/λ", "c=fλ", "c=λ/f", "c=f+λ"], "correct_answer": "B", "explanation": "c = f·λ.", "difficulty": "easy" },
+    { "question": "Un condensateur se charge: l’énergie stockée vaut :", "choices": ["E=½CU²", "E=CU", "E=U/C", "E=RI²"], "correct_answer": "A", "explanation": "Énergie d’un condensateur: ½ C U².", "difficulty": "easy" },
+
+    { "question": "Une onde de fréquence 170 Hz se propage à 340 m/s. Sa longueur d’onde vaut :", "choices": ["0,5 m", "1 m", "2 m", "170 m"], "correct_answer": "C", "explanation": "λ=v/f=340/170=2 m.", "difficulty": "medium" },
+    { "question": "Une particule de charge 2 C traverse une différence de potentiel de 3 V. Le travail vaut :", "choices": ["1,5 J", "3 J", "6 J", "9 J"], "correct_answer": "C", "explanation": "W=qU=2×3=6 J.", "difficulty": "medium" },
+    { "question": "La période d’un signal de fréquence 50 Hz est :", "choices": ["0,02 s", "0,2 s", "2 s", "20 s"], "correct_answer": "A", "explanation": "T=1/f=1/50=0,02 s.", "difficulty": "medium" },
+    { "question": "Un noyau instable se désintègre avec une demi‑vie \(T_{1/2}\\). Après deux demi‑vies, la fraction restante est :", "choices": ["1/2", "1/3", "1/4", "1/8"], "correct_answer": "C", "explanation": "Après 2 demi‑vies: (1/2)²=1/4.", "difficulty": "medium" },
+    { "question": "La relation entre l’énergie cinétique d’un électron accéléré sous U est :", "choices": ["Ec=qU", "Ec=U/q", "Ec=q/U", "Ec=½qU²"], "correct_answer": "A", "explanation": "Gain d’énergie: qU.", "difficulty": "medium" },
+    { "question": "Dans un circuit RC, la constante de temps τ vaut :", "choices": ["R+C", "RC", "R/C", "C/R"], "correct_answer": "B", "explanation": "τ=RC.", "difficulty": "medium" },
+
+    { "question": "Un aimant attire principalement :",
+      "choices": ["le verre", "le plastique", "le fer", "le papier"],
+      "correct_answer": "C",
+      "explanation": "Un aimant attire les matériaux ferromagnétiques (fer, nickel, cobalt).",
+      "difficulty": "hard" },
+    { "question": "Un photon de longueur d’onde 500 nm a une fréquence proche de :", "choices": ["6×10¹⁴ Hz", "6×10¹² Hz", "6×10¹⁶ Hz", "6×10¹⁰ Hz"], "correct_answer": "A", "explanation": "f=c/λ=3e8 / 5e-7 ≈ 6e14 Hz.", "difficulty": "hard" },
+    { "question": "Un circuit consomme 1200 W sous 230 V. L’intensité vaut environ :", "choices": ["2,6 A", "5,2 A", "10,4 A", "23 A"], "correct_answer": "B", "explanation": "I=P/U=1200/230≈5,2 A.", "difficulty": "hard" },
+    { "question": "L’énergie d’un condensateur de C=100 µF sous 12 V vaut environ :", "choices": ["0,0072 J", "0,072 J", "0,72 J", "7,2 J"], "correct_answer": "A", "explanation": "E=½CU²=0,5×1e-4×144=0,0072 J.", "difficulty": "hard" },
+    { "question": "Une désintégration radioactive suit une loi :", "choices": ["linéaire", "quadratique", "exponentielle", "sinusoïdale"], "correct_answer": "C", "explanation": "Décroissance exponentielle.", "difficulty": "hard" },
+    { "question": "Un électron (q=1,6×10⁻¹⁹ C) accéléré sous 1000 V gagne une énergie (en J) de :", "choices": ["1,6×10⁻¹⁶", "1,6×10⁻¹⁹", "1,6×10⁻²²", "1,6×10⁻¹³"], "correct_answer": "A", "explanation": "Ec=qU=1,6e−19×1000=1,6e−16 J.", "difficulty": "hard" }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "questions": [
+    {
+      "question": "Quelle est la relation entre pH et concentration en ions H⁺ ?",
+      "choices": ["pH = log([H⁺])", "pH = −log([H⁺])", "pH = 1/[H⁺]", "pH = [H⁺]"],
+      "correct_answer": "B",
+      "explanation": "Par définition: pH = −log10([H⁺]).",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Dans une réaction acide–base, la base conjuguée de HCl est :",
+      "choices": ["H₂Cl⁺", "Cl⁻", "H⁺", "Cl₂"],
+      "correct_answer": "B",
+      "explanation": "HCl cède H⁺ et laisse Cl⁻.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle est la masse molaire de CO₂ (en g/mol) ?",
+      "choices": ["28", "32", "44", "48"],
+      "correct_answer": "C",
+      "explanation": "M(CO₂)=12 + 2×16 = 44 g/mol.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle loi relie pression, volume et température pour un gaz parfait (n constant) ?",
+      "choices": ["pV = nRT", "pV = RT", "p = ρg", "E = mc²"],
+      "correct_answer": "A",
+      "explanation": "Équation d’état: pV = nRT.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Pour une solution aqueuse, si pH = 4, alors [H⁺] vaut :",
+      "choices": ["10⁻⁴ mol/L", "10⁴ mol/L", "4 mol/L", "0,4 mol/L"],
+      "correct_answer": "A",
+      "explanation": "[H⁺]=10^{-4}.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quel est le sens de Kc >> 1 pour une réaction à l’équilibre ?",
+      "choices": ["Réactifs majoritaires", "Produits majoritaires", "Aucun produit formé", "Réaction impossible"],
+      "correct_answer": "B",
+      "explanation": "Kc grand ⇒ équilibre fortement déplacé vers les produits.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Dans une oxydoréduction, une réduction correspond à :",
+      "choices": ["perte d’électrons", "gain d’électrons", "gain de protons", "perte de neutrons"],
+      "correct_answer": "B",
+      "explanation": "Réduction = gain d’électrons.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "On dissout 0,10 mol de soluté pour obtenir 250 mL de solution. Quelle est la concentration molaire ?",
+      "choices": ["0,04 mol/L", "0,10 mol/L", "0,40 mol/L", "2,5 mol/L"],
+      "correct_answer": "C",
+      "explanation": "C=n/V=0,10/0,250=0,40 mol/L.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Quelle est la quantité de matière dans 5,00 g de NaOH (M=40,0 g/mol) ?",
+      "choices": ["0,050 mol", "0,125 mol", "0,200 mol", "2,00 mol"],
+      "correct_answer": "B",
+      "explanation": "n = m/M = 5,00/40,0 = 0,125 mol.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "On dilue 20,0 mL d’une solution à 1,5 mol/L pour obtenir 0,30 mol/L. Quel volume final V₂ faut-il ?",
+      "choices": ["50,0 mL", "75,0 mL", "100 mL", "150 mL"],
+      "correct_answer": "C",
+      "explanation": "C₁V₁=C₂V₂ ⇒ V₂=(1,5×20,0)/0,30=100 mL.",
+      "difficulty": "hard"
+    }
+  ]
+}

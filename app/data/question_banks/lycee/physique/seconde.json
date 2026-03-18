@@ -1,0 +1,26 @@
+{
+  "questions": [
+    { "question": "Quelle est l’unité SI de la force ?", "choices": ["J", "N", "W", "Pa"], "correct_answer": "B", "explanation": "La force s’exprime en newton (N).", "difficulty": "easy" },
+    { "question": "Quelle est l’unité SI de l’énergie ?", "choices": ["J", "N", "W", "V"], "correct_answer": "A", "explanation": "L’énergie s’exprime en joule (J).", "difficulty": "easy" },
+    { "question": "La vitesse moyenne vaut :", "choices": ["d/t", "t/d", "d×t", "d−t"], "correct_answer": "A", "explanation": "v = distance / temps.", "difficulty": "easy" },
+    { "question": "Quel appareil mesure une tension électrique ?", "choices": ["Ampèremètre", "Voltmètre", "Ohmmètre", "Thermomètre"], "correct_answer": "B", "explanation": "La tension se mesure au voltmètre.", "difficulty": "easy" },
+    { "question": "Dans un circuit en série, l’intensité du courant est :", "choices": ["la même partout", "différente partout", "toujours nulle", "toujours maximale"], "correct_answer": "A", "explanation": "En série, le courant est identique.", "difficulty": "easy" },
+    { "question": "La masse volumique ρ s’exprime en :", "choices": ["kg", "kg/m³", "m³", "N/kg"], "correct_answer": "B", "explanation": "ρ = m/V en kg/m³.", "difficulty": "easy" },
+    { "question": "La loi d’Ohm s’écrit :", "choices": ["U = RI", "P = UI", "F = ma", "E = mc²"], "correct_answer": "A", "explanation": "U = R×I.", "difficulty": "easy" },
+
+    { "question": "Un objet de masse 2 kg subit une force de 10 N. Son accélération vaut :", "choices": ["2 m/s²", "5 m/s²", "10 m/s²", "20 m/s²"], "correct_answer": "B", "explanation": "a=F/m=10/2=5.", "difficulty": "medium" },
+    { "question": "L’énergie cinétique d’un objet est donnée par :", "choices": ["Ec=mv", "Ec=½mv²", "Ec=mgh", "Ec=F·t"], "correct_answer": "B", "explanation": "Ec=½mv².", "difficulty": "medium" },
+    { "question": "Une puissance électrique P vaut :", "choices": ["U/I", "U×I", "R×I", "U×R"], "correct_answer": "B", "explanation": "P = U×I.", "difficulty": "medium" },
+    { "question": "Dans un circuit en dérivation (parallèle), la tension aux bornes de chaque branche est :", "choices": ["différente", "la même", "nulle", "toujours 220 V"], "correct_answer": "B", "explanation": "En parallèle, la tension est la même sur chaque branche.", "difficulty": "medium" },
+    { "question": "Un objet tombe en chute libre sans frottements. Son accélération est :", "choices": ["0", "g", "2g", "variable au hasard"], "correct_answer": "B", "explanation": "Accélération = g ≈ 9,8 m/s².", "difficulty": "medium" },
+    { "question": "Si R=10 Ω et I=0,5 A, la tension U vaut :", "choices": ["2 V", "5 V", "10 V", "20 V"], "correct_answer": "B", "explanation": "U=RI=10×0,5=5 V.", "difficulty": "medium" },
+    { "question": "La pression est une force par :", "choices": ["volume", "surface", "temps", "masse"], "correct_answer": "B", "explanation": "p = F/S.", "difficulty": "medium" },
+
+    { "question": "Un courant de 2 A traverse une résistance de 10 Ω pendant 5 s. L’énergie dissipée vaut :", "choices": ["50 J", "100 J", "200 J", "400 J"], "correct_answer": "C", "explanation": "E=R I² t = 10×4×5=200 J.", "difficulty": "hard" },
+    { "question": "Un objet de 3 kg passe de 0 à 6 m/s. Son énergie cinétique finale vaut :", "choices": ["18 J", "27 J", "54 J", "108 J"], "correct_answer": "C", "explanation": "Ec=½·3·6²=1,5·36=54 J.", "difficulty": "hard" },
+    { "question": "Un mobile parcourt 120 m en 15 s. Sa vitesse moyenne vaut :", "choices": ["6 m/s", "8 m/s", "10 m/s", "12 m/s"], "correct_answer": "B", "explanation": "v=120/15=8 m/s.", "difficulty": "hard" },
+    { "question": "La puissance dissipée par effet Joule dans une résistance est :", "choices": ["P=UI", "P=RI²", "P=U/R", "P=I/R"], "correct_answer": "B", "explanation": "P=RI².", "difficulty": "hard" },
+    { "question": "Si on double la vitesse d’un objet, son énergie cinétique est multipliée par :", "choices": ["2", "3", "4", "8"], "correct_answer": "C", "explanation": "Ec ∝ v² donc ×2 ⇒ ×4.", "difficulty": "hard" },
+    { "question": "Une force de 5 N agit sur 3 m dans son sens. Le travail vaut :", "choices": ["1,7 J", "8 J", "15 J", "30 J"], "correct_answer": "C", "explanation": "W=F·d=5×3=15 J.", "difficulty": "hard" }
+  ]
+}

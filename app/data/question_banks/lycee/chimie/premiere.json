@@ -1,0 +1,111 @@
+{
+  "questions": [
+    {
+      "question": "Quelle est la masse molaire de H₂O (en g/mol) ?",
+      "choices": ["16", "18", "20", "22"],
+      "correct_answer": "B",
+      "explanation": "M(H₂O)=2×1 + 16 = 18 g/mol.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle relation permet de calculer la quantité de matière n ?",
+      "choices": ["n = m×M", "n = m/M", "n = M/m", "n = m + M"],
+      "correct_answer": "B",
+      "explanation": "Définition: n = m / M.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Un acide (Brønsted) est une espèce qui :",
+      "choices": ["capte un proton", "cède un proton", "capte un électron", "cède un neutron"],
+      "correct_answer": "B",
+      "explanation": "Un acide cède un proton H⁺.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "La combustion complète du méthane CH₄ produit :",
+      "choices": ["CO₂ et H₂O", "CO et H₂", "C et H₂", "O₂ et H₂"],
+      "correct_answer": "A",
+      "explanation": "Combustion complète: CO₂ + H₂O.",
+      "difficulty": "easy"
+    },
+    {
+      "question": "Quelle est la formule de la concentration molaire C ?",
+      "choices": ["C = n/V", "C = V/n", "C = m/V", "C = n×V"],
+      "correct_answer": "A",
+      "explanation": "C = n / V (V en L).",
+      "difficulty": "easy"
+    },
+
+    {
+      "question": "Si pH = 3, alors [H⁺] vaut :",
+      "choices": ["10⁻³ mol/L", "10³ mol/L", "3 mol/L", "0,3 mol/L"],
+      "correct_answer": "A",
+      "explanation": "[H⁺]=10^{-pH}=10^{-3}.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Lors d’une dilution, la relation correcte est :",
+      "choices": ["C₁V₁ = C₂V₂", "C₁ + V₁ = C₂ + V₂", "C₁/C₂ = V₁/V₂²", "C₁V₂ = C₂V₁²"],
+      "correct_answer": "A",
+      "explanation": "La quantité de soluté se conserve.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Une solution de pH = 9 est :",
+      "choices": ["acide", "neutre", "basique", "saturée"],
+      "correct_answer": "C",
+      "explanation": "pH>7 ⇒ basique.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Dans une réaction d’oxydoréduction, un oxydant est une espèce qui :",
+      "choices": ["donne des électrons", "capte des électrons", "donne des protons", "capte des neutrons"],
+      "correct_answer": "B",
+      "explanation": "Un oxydant se réduit en captant des électrons.",
+      "difficulty": "medium"
+    },
+    {
+      "question": "Quel est le rôle d’un indicateur coloré acide–base ?",
+      "choices": ["Mesurer la masse", "Mesurer le volume", "Estimer le pH par changement de couleur", "Refroidir la solution"],
+      "correct_answer": "C",
+      "explanation": "Un indicateur change de couleur selon le pH.",
+      "difficulty": "medium"
+    },
+
+    {
+      "question": "On dilue 50,0 mL d’une solution à 1,0 mol/L pour obtenir 0,20 mol/L. Quel volume final faut-il ?",
+      "choices": ["100 mL", "150 mL", "250 mL", "500 mL"],
+      "correct_answer": "C",
+      "explanation": "C₁V₁=C₂V₂ ⇒ V₂=(1,0×50,0)/0,20=250 mL.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Quelle quantité de matière contient 2,70 g d’aluminium (M=27,0 g/mol) ?",
+      "choices": ["0,01 mol", "0,10 mol", "1,0 mol", "10 mol"],
+      "correct_answer": "B",
+      "explanation": "n = 2,70/27,0 = 0,10 mol.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "On dissout 5,85 g de NaCl (M=58,5 g/mol). Combien de moles de NaCl obtient-on ?",
+      "choices": ["0,01 mol", "0,10 mol", "1,00 mol", "10,0 mol"],
+      "correct_answer": "B",
+      "explanation": "n = m/M = 5,85/58,5 = 0,10 mol.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Pour la réaction aA + bB → cC + dD, l’expression de K (en concentrations) est :",
+      "choices": ["K=[A]^a[B]^b/[C]^c[D]^d", "K=[C]^c[D]^d/[A]^a[B]^b", "K=[A]+[B]-[C]-[D]", "K=[C]/[A]"],
+      "correct_answer": "B",
+      "explanation": "Produits sur réactifs, puissances = coefficients.",
+      "difficulty": "hard"
+    },
+    {
+      "question": "Quel volume d’eau faut-il ajouter pour diluer 100 mL à 1,0 mol/L en 0,25 mol/L ?",
+      "choices": ["100 mL", "200 mL", "300 mL", "400 mL"],
+      "correct_answer": "D",
+      "explanation": "V₂=(1,0×100)/0,25=400 mL, on ajoute 300 mL.",
+      "difficulty": "hard"
+    }
+  ]
+}

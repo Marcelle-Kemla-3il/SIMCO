@@ -1,0 +1,23 @@
+{
+  "questions": [
+    { "question": "Quelle est la valeur approchée de g sur Terre ?", "choices": ["1,6 m/s²", "9,8 m/s²", "3,0×10⁸ m/s²", "0 m/s²"], "correct_answer": "B", "explanation": "g ≈ 9,8 m/s².", "difficulty": "easy" },
+    { "question": "La puissance P s’exprime en :", "choices": ["J", "W", "N", "C"], "correct_answer": "B", "explanation": "Unité: watt (W).", "difficulty": "easy" },
+    { "question": "Quelle relation donne l’énergie potentielle de pesanteur ?", "choices": ["Ep = mgh", "Ep = ½mv²", "Ep = RI²t", "Ep = UI"], "correct_answer": "A", "explanation": "Ep = m g h.", "difficulty": "easy" },
+    { "question": "Une intensité se mesure en :", "choices": ["V", "A", "Ω", "W"], "correct_answer": "B", "explanation": "Unité: ampère (A).", "difficulty": "easy" },
+    { "question": "La vitesse de la lumière dans le vide vaut environ :", "choices": ["3×10⁶ m/s", "3×10⁷ m/s", "3×10⁸ m/s", "3×10⁹ m/s"], "correct_answer": "C", "explanation": "c ≈ 3×10⁸ m/s.", "difficulty": "easy" },
+
+    { "question": "Un objet de masse 5 kg est à 2 m de hauteur. Quelle est Ep (g=9,8) ?", "choices": ["9,8 J", "49 J", "98 J", "980 J"], "correct_answer": "C", "explanation": "Ep=mgh=5×9,8×2=98 J.", "difficulty": "medium" },
+    { "question": "Un appareil consomme I=2 A sous U=230 V. Sa puissance vaut :", "choices": ["115 W", "230 W", "460 W", "920 W"], "correct_answer": "C", "explanation": "P=UI=230×2=460 W.", "difficulty": "medium" },
+    { "question": "Quelle loi relie fréquence f et période T ?", "choices": ["f=T", "f=1/T", "f=T²", "f=2T"], "correct_answer": "B", "explanation": "f = 1/T.", "difficulty": "medium" },
+    { "question": "Pour une onde, la relation entre vitesse v, fréquence f et longueur d’onde λ est :", "choices": ["v=f/λ", "v=fλ", "v=λ/f", "v=f+λ"], "correct_answer": "B", "explanation": "v = f·λ.", "difficulty": "medium" },
+    { "question": "Un courant traverse R=50 Ω sous U=10 V. L’intensité vaut :", "choices": ["0,2 A", "0,5 A", "2 A", "5 A"], "correct_answer": "A", "explanation": "I=U/R=10/50=0,2 A.", "difficulty": "medium" },
+    { "question": "Une énergie cinétique Ec vaut 200 J pour une masse 2 kg. La vitesse vaut :", "choices": ["5 m/s", "10 m/s", "14 m/s", "20 m/s"], "correct_answer": "C", "explanation": "Ec=½mv² ⇒ v=√(2Ec/m)=√(200)=14,1 m/s ≈ 14 m/s.", "difficulty": "medium" },
+
+    { "question": "On laisse tomber un objet (sans frottements). Sa vitesse après 3 s vaut environ :", "choices": ["9,8 m/s", "19,6 m/s", "29,4 m/s", "39,2 m/s"], "correct_answer": "C", "explanation": "v=g t ≈ 9,8×3=29,4 m/s.", "difficulty": "hard" },
+    { "question": "Deux résistances 10 Ω et 20 Ω en série ont une résistance équivalente :", "choices": ["5 Ω", "10 Ω", "20 Ω", "30 Ω"], "correct_answer": "D", "explanation": "Série: Req=10+20=30 Ω.", "difficulty": "hard" },
+    { "question": "Deux résistances 10 Ω et 20 Ω en parallèle ont une résistance équivalente :", "choices": ["6,7 Ω", "10 Ω", "15 Ω", "30 Ω"], "correct_answer": "A", "explanation": "1/Req=1/10+1/20=0,15 ⇒ Req≈6,67 Ω.", "difficulty": "hard" },
+    { "question": "Un moteur fournit un travail de 1200 J en 30 s. Sa puissance vaut :", "choices": ["20 W", "40 W", "60 W", "120 W"], "correct_answer": "B", "explanation": "P=W/t=1200/30=40 W.", "difficulty": "hard" },
+    { "question": "Une force constante F=15 N déplace un objet de 4 m dans son sens. Le travail vaut :", "choices": ["19 J", "45 J", "60 J", "75 J"], "correct_answer": "C", "explanation": "W=F·d=15×4=60 J.", "difficulty": "hard" },
+    { "question": "La fréquence d’une onde de longueur d’onde 0,50 m se propageant à 340 m/s vaut :", "choices": ["170 Hz", "340 Hz", "680 Hz", "1360 Hz"], "correct_answer": "C", "explanation": "f=v/λ=340/0,50=680 Hz.", "difficulty": "hard" }
+  ]
+}

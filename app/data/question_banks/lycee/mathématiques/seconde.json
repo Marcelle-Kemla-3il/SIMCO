@@ -1,0 +1,26 @@
+{
+  "questions": [
+    { "question": "Résoudre: 3x − 5 = 10. Quelle est la valeur de x ?", "choices": ["3", "5", "−5", "15"], "correct_answer": "B", "explanation": "3x=15 donc x=5.", "difficulty": "easy" },
+    { "question": "Calculer: 7 × 8 =", "choices": ["54", "56", "58", "64"], "correct_answer": "B", "explanation": "7×8=56.", "difficulty": "easy" },
+    { "question": "Calculer: (12 − 4) ÷ 2 =", "choices": ["2", "3", "4", "8"], "correct_answer": "C", "explanation": "(12−4)=8 puis 8/2=4.", "difficulty": "easy" },
+    { "question": "Convertir 0,25 en fraction irréductible.", "choices": ["1/2", "1/3", "1/4", "2/5"], "correct_answer": "C", "explanation": "0,25 = 25/100 = 1/4.", "difficulty": "easy" },
+    { "question": "Dans un triangle, la somme des angles vaut :", "choices": ["90°", "120°", "180°", "360°"], "correct_answer": "C", "explanation": "Somme des angles d’un triangle = 180°.", "difficulty": "easy" },
+    { "question": "Si 40% d’une classe de 30 élèves sont des filles, combien y a-t-il de filles ?", "choices": ["10", "12", "14", "18"], "correct_answer": "B", "explanation": "0,40×30=12.", "difficulty": "easy" },
+    { "question": "Factoriser: x² − 16 =", "choices": ["(x−4)(x+4)", "(x−8)(x+2)", "(x−4)²", "(x+4)²"], "correct_answer": "A", "explanation": "Différence de carrés: x²−4²=(x−4)(x+4).", "difficulty": "easy" },
+
+    { "question": "Résoudre: 2(x + 3) = 18.", "choices": ["x=3", "x=6", "x=9", "x=12"], "correct_answer": "B", "explanation": "2x+6=18 ⇒ 2x=12 ⇒ x=6.", "difficulty": "medium" },
+    { "question": "Développer: (x + 5)(x − 2) =", "choices": ["x² + 3x − 10", "x² − 3x − 10", "x² + 7x − 10", "x² − 7x + 10"], "correct_answer": "A", "explanation": "x²−2x+5x−10 = x²+3x−10.", "difficulty": "medium" },
+    { "question": "Pour x = −3, calculer x² − 2x.", "choices": ["3", "9", "15", "−15"], "correct_answer": "C", "explanation": "x²=9 et −2x=6 donc 9+6=15.", "difficulty": "medium" },
+    { "question": "Une réduction de 15% sur 80€ donne un prix de :", "choices": ["68€", "70€", "72€", "75€"], "correct_answer": "A", "explanation": "15% de 80 = 12, donc 80−12=68.", "difficulty": "medium" },
+    { "question": "Résoudre l’inéquation: 4x ≤ 20.", "choices": ["x≤2", "x≤5", "x≥5", "x≥20"], "correct_answer": "B", "explanation": "x ≤ 20/4 = 5.", "difficulty": "medium" },
+    { "question": "Calculer la pente d’une droite passant par (0,2) et (4,10).", "choices": ["1", "2", "3", "4"], "correct_answer": "B", "explanation": "m=(10−2)/(4−0)=8/4=2.", "difficulty": "medium" },
+    { "question": "Simplifier: (3a²b)/(6ab) =", "choices": ["a/2", "a²/2", "ab/2", "b/2"], "correct_answer": "A", "explanation": "On simplifie par 3ab: (a)/2.", "difficulty": "medium" },
+
+    { "question": "Dans un triangle rectangle, si les côtés de l’angle droit valent 6 et 8, l’hypoténuse vaut :", "choices": ["10", "12", "14", "16"], "correct_answer": "A", "explanation": "Pythagore: √(6²+8²)=√(36+64)=√100=10.", "difficulty": "hard" },
+    { "question": "Résoudre: x² = 49. Les solutions réelles sont :", "choices": ["x=7", "x=−7", "x=±7", "aucune"], "correct_answer": "C", "explanation": "x=7 ou x=−7.", "difficulty": "hard" },
+    { "question": "Calculer: (5/6) − (1/4) =", "choices": ["7/12", "13/12", "1/2", "1/12"], "correct_answer": "A", "explanation": "PPCM 12: 10/12 − 3/12 = 7/12.", "difficulty": "hard" },
+    { "question": "Un rectangle a un périmètre de 50 cm. Si sa longueur vaut 15 cm, sa largeur vaut :", "choices": ["5 cm", "10 cm", "15 cm", "20 cm"], "correct_answer": "B", "explanation": "2(L+l)=50 ⇒ L+l=25 ⇒ l=10.", "difficulty": "hard" },
+    { "question": "Résoudre: 5 − 2(3x − 1) = 9.", "choices": ["x=−1", "x=0", "x=1", "x=−1/3"], "correct_answer": "D", "explanation": "5−2(3x−1)=5−6x+2=7−6x; 7−6x=9 ⇒ −6x=2 ⇒ x=−1/3.", "difficulty": "hard" },
+    { "question": "Une fonction affine f(x)=ax+b vérifie f(0)=−1 et f(2)=3. Alors a vaut :", "choices": ["1", "2", "3", "4"], "correct_answer": "B", "explanation": "Variation: (3−(−1))/2 = 4/2 = 2.", "difficulty": "hard" }
+  ]
+}

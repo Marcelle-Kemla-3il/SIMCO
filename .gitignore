@@ -23,8 +23,10 @@ MANIFEST
 
 # Virtual Environment
 venv/
+venv311/
 env/
 ENV/
+.venv/
 
 # IDE
 .vscode/
@@ -48,6 +50,36 @@ yarn-error.log*
 
 # React
 quiz-frontend/build/
+quiz-frontend/dist/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+simco.db
+test_simco.db
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env.local
+.env.production
+.env.staging
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Test files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker
+.dockerignore
 quiz-frontend/dist/
 
 # Environment variables

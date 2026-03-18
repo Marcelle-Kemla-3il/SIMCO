@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { KnowledgeCurveChart, ConfidenceProgressionChart, EmotionRadarChart, CorrectAnswerRateChart, EmotionTimeSeriesChart } from './ChartComponents'
 
 const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://127.0.0.1:8080'
 
@@ -30,6 +31,8 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
   const [cameraError, setCameraError] = useState(null)
   const [facesCount, setFacesCount] = useState(null)
   const [dominantEmotion, setDominantEmotion] = useState(null)
+  const [confidenceScore, setConfidenceScore] = useState(null)
+  const [emotionHistory, setEmotionHistory] = useState([])
   const [videoEl, setVideoEl] = useState(null)
   const [streamRef, setStreamRef] = useState(null)
   const [sessionId, setSessionId] = useState(null)
@@ -38,6 +41,77 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
   const [generationError, setGenerationError] = useState(null)
   const [generationWarning, setGenerationWarning] = useState(null)
   const [globalConfidenceSubmitted, setGlobalConfidenceSubmitted] = useState(false)
+
+  // LocalStorage persistence for quiz state
+  const useQuizStorage = (sessionId) => {
+    const storageKey = `quiz_session_${sessionId}`
+    
+    const saveProgress = useCallback((state) => {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({
+          timestamp: new Date().toISOString(),
+          currentStep: state.currentStep,
+          currentQuestionIndex: state.currentQuestionIndex,
+          answers: state.answers,
+          emotionHistory: state.emotionHistory,
+          userName: state.userName,
+          userEmail: state.userEmail
+        }))
+      } catch (e) {
+        console.warn('Failed to save progress:', e)
+      }
+    }, [storageKey])
+
+    const loadProgress = useCallback(() => {
+      try {
+        const saved = localStorage.getItem(storageKey)
+        return saved ? JSON.parse(saved) : null
+      } catch (e) {
+        console.warn('Failed to load progress:', e)
+        return null
+      }
+    }, [storageKey])
+
+    const clearProgress = useCallback(() => {
+      try {
+        localStorage.removeItem(storageKey)
+      } catch (e) {
+        console.warn('Failed to clear progress:', e)
+      }
+    }, [storageKey])
+
+    return { saveProgress, loadProgress, clearProgress }
+  }
+
+  const { saveProgress, loadProgress, clearProgress } = useQuizStorage(sessionId)
+
+  const KnowledgeCurve = ({ answers, total }) => {
+    const points = answers.map((a, idx) => ({
+      x: (idx + 1) / (total || 1),
+      y: a.isCorrect ? 1 : 0
+    }))
+    const width = 120
+    const height = 40
+    const path = points.map((p, i) => {
+      const x = p.x * width
+      const y = height - p.y * height
+      return `${i===0 ? 'M' : 'L'}${x},${y}`
+    }).join(' ')
+
+    const score = total ? Math.round((answers.filter(a => a.isCorrect).length / total) * 100) : 0
+
+    return (
+      <div className="flex items-center space-x-3">
+        <svg width={width} height={height} className="rounded-lg bg-white/10 border border-white/20">
+          <path d={path} fill="none" stroke="#22c55e" strokeWidth="2" strokeLinejoin="round" />
+        </svg>
+        <div className="text-xs text-white">
+          <div className="font-semibold">Courbe de connaissance</div>
+          <div>{score}%</div>
+        </div>
+      </div>
+    )
+  }
   
   // UI state
   const [showReadyScreen, setShowReadyScreen] = useState(false)
@@ -143,7 +217,7 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
       }
 
       setResults(results)
-      setCurrentStep(6)
+      setCurrentStep(7)
     } catch (error) {
       console.error('Error showing results:', error)
       // Fallback to basic results
@@ -161,7 +235,7 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
         bias_flags: { dunning_kruger: false, impostor: false },
         bias_notes: []
       })
-      setCurrentStep(6)
+      setCurrentStep(7)
     }
   }, [answers, sessionId])
 
@@ -169,6 +243,14 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
     if (currentStep === 5) return
     setAutoSubmittedKey(null)
   }, [currentStep])
+
+  // Keep currentQuestionIndex in sync with the number of answers submitted.
+  // This ensures the question counter updates reliably even if state updates
+  // happen asynchronously or are batched.
+  useEffect(() => {
+    if (currentStep !== 5) return
+    setCurrentQuestionIndex(answers.length)
+  }, [answers, currentStep])
 
   useEffect(() => {
     return () => {
@@ -194,6 +276,24 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
       setSubject('informatique')
     }
   }, [level])
+
+  // Auto-save progress every 10 seconds during quiz
+  useEffect(() => {
+    if (currentStep === 5 && sessionId) {  // Step 5 is the quiz taking step
+      const interval = setInterval(() => {
+        saveProgress({
+          currentStep,
+          currentQuestionIndex,
+          answers,
+          emotionHistory,
+          userName,
+          userEmail
+        })
+      }, 10000)
+      
+      return () => clearInterval(interval)
+    }
+  }, [currentStep, currentQuestionIndex, answers, emotionHistory, sessionId, saveProgress])
 
   const captureAndAnalyzeFrame = useCallback(async () => {
     if (!videoEl) return
@@ -227,6 +327,10 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
       if (!isMountedRef.current) return
       const nextFacesCount = typeof data.faces_count === 'number' ? data.faces_count : null
       const nextDominantEmotion = typeof data.dominant_emotion === 'string' ? data.dominant_emotion : null
+      const nextConfidenceScore = typeof data.confidence_score === 'number' ? data.confidence_score : null
+      const nextEmotions = (data && typeof data === 'object' && data.normalized_emotions && typeof data.normalized_emotions === 'object')
+        ? data.normalized_emotions
+        : undefined
 
       if (typeof nextFacesCount === 'number' && nextFacesCount <= 0) {
         if (noFaceSinceMsRef.current == null) {
@@ -243,6 +347,8 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
             setSelectedOption(null)
             setFacesCount(null)
             setDominantEmotion(null)
+            setConfidenceScore(null)
+            setEmotionHistory([])
             return
           }
         }
@@ -252,10 +358,19 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
 
       setFacesCount(nextFacesCount)
       setDominantEmotion(nextDominantEmotion)
+      setConfidenceScore(nextConfidenceScore)
 
-      const nextEmotions = (data && typeof data === 'object' && data.emotions && typeof data.emotions === 'object')
-        ? data.emotions
-        : undefined
+      if (nextEmotions) {
+        setEmotionHistory((prev) => [
+          {
+            ts: Date.now(),
+            emotions: nextEmotions,
+            dominant: nextDominantEmotion,
+            confidence: nextConfidenceScore,
+          },
+          ...prev.slice(0, 9)
+        ])
+      }
 
       try {
         const params = new URLSearchParams()
@@ -379,11 +494,10 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
         return
       }
 
-      setTimeout(() => {
-        setCurrentQuestionIndex((prev) => prev + 1)
-        setSelectedOption(null)
-        setTimeRemaining(10)
-      }, 100)
+      // Advance to next question immediately after successful submission.
+      setCurrentQuestionIndex((prev) => prev + 1)
+      setSelectedOption(null)
+      setTimeRemaining(10)
     } catch (error) {
       console.error('Error submitting answer:', error)
       alert('Erreur lors de la soumission. Veuillez réessayer.')
@@ -985,10 +1099,38 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
                 {cameraError ? (
                   <div className="text-red-100">{cameraError}</div>
                 ) : (
-                  <div className="text-primary-100">
-                    Visages: {facesCount === null ? '-' : facesCount}
-                    {dominantEmotion ? ` | Émotion: ${dominantEmotion}` : ''}
-                  </div>
+                  <>
+                    <div className="text-primary-100">
+                      Visages: {facesCount === null ? '-' : facesCount}
+                      {dominantEmotion ? ` | Émotion: ${dominantEmotion}` : ''}
+                    </div>
+                    <div className="mt-2 text-primary-100">
+                      Confiance: {confidenceScore === null ? '-' : `${Math.round(confidenceScore * 100)}%`}
+                    </div>
+                    {emotionHistory.length > 0 && (
+                      <div className="mt-2">
+                        <div className="text-[10px] text-white/70">Historique émotionnel</div>
+                        <div className="w-32 h-10">
+                          <svg width="100%" height="100%" viewBox="0 0 120 40" preserveAspectRatio="none">
+                            <polyline
+                              fill="none"
+                              stroke="#22c55e"
+                              strokeWidth="2"
+                              points={emotionHistory
+                                .slice(0, 20)
+                                .reverse()
+                                .map((item, idx) => {
+                                  const x = (idx / 19) * 118 + 1
+                                  const y = 38 - (Math.min(1, Math.max(0, item.confidence ?? 0)) * 36)
+                                  return `${x},${y}`
+                                })
+                                .join(' ')}
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -1064,25 +1206,6 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
                 })}
               </div>
 
-              <div className="border rounded-xl p-4 mb-6 bg-white">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="text-sm font-semibold text-gray-800">Confiance déclarée (question)</div>
-                  <div className="text-sm font-bold text-primary-700">{finalDeclaredConfidence}%</div>
-                </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={finalDeclaredConfidence}
-                  onChange={(e) => setFinalDeclaredConfidence(Number(e.target.value))}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-[11px] text-gray-500 mt-1">
-                  <span>Pas sûr</span>
-                  <span>Très sûr</span>
-                </div>
-              </div>
-
               <button
                 onClick={submitAnswer}
                 disabled={selectedOption === null || loading}
@@ -1143,7 +1266,7 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
     )
   }
 
-  // Step 7: Results
+  // Step 7: Results with Enhanced Visualizations
   if (currentStep === 7 && results) {
     const declaredPct = Math.round(((results.declared_confidence ?? 0.5) * 100))
     const observedPct = Math.round(((results.observed_confidence ?? 0.5) * 100))
@@ -1151,81 +1274,129 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
     const impOn = Boolean(results.bias_flags?.impostor)
     const hasBiasNotes = Array.isArray(results.bias_notes) && results.bias_notes.length > 0
 
+    const [chartTab, setChartTab] = useState('knowledge')  // Track active chart tab
+
     return (
       <div key={`step-${currentStep}`} className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-xl p-8 max-w-4xl w-full">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-6xl w-full">
+          {/* Header Section */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Quiz Terminé !</h1>
-            <div className="flex justify-center space-x-8 mb-6">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary-600">{results.percentage}%</div>
-                <div className="text-gray-600">Score global</div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4">Quiz Terminé! 🎉</h1>
+            <div className="flex flex-col md:flex-row justify-center gap-8 mb-8">
+              <div className="text-center p-6 rounded-lg bg-gradient-to-br from-green-50 to-green-100 border border-green-200">
+                <div className="text-5xl font-bold text-green-600 mb-2">{results.percentage}%</div>
+                <div className="text-gray-700 font-semibold">Score global</div>
               </div>
-              <div className="text-center">
-                <div className="text-4xl font-bold text-primary-600">{results.score}</div>
-                <div className="text-gray-600">Points obtenus</div>
+              <div className="text-center p-6 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200">
+                <div className="text-5xl font-bold text-blue-600 mb-2">{results.score}</div>
+                <div className="text-gray-700 font-semibold">Points obtenus</div>
+              </div>
+              <div className="text-center p-6 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200">
+                <div className="text-5xl font-bold text-purple-600 mb-2">{results.answered_count}</div>
+                <div className="text-gray-700 font-semibold">Questions répondues</div>
               </div>
             </div>
           </div>
 
+          {/* Confidence Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div className="border rounded-xl p-4 bg-gray-50">
-              <div className="text-sm font-semibold text-gray-700">Confiance déclarée</div>
-              <div className="text-2xl font-bold text-primary-700">{declaredPct}%</div>
-              <div className="text-xs text-gray-600 mt-1">Auto-évaluation (globale)</div>
+            <div className="border rounded-lg p-4 bg-blue-50 border-blue-200">
+              <div className="text-sm font-semibold text-blue-900">Confiance Déclarée</div>
+              <div className="text-3xl font-bold text-blue-600 mt-2">{declaredPct}%</div>
+              <div className="text-xs text-blue-700 mt-1">Auto-évaluation globale</div>
             </div>
-            <div className="border rounded-xl p-4 bg-gray-50">
-              <div className="text-sm font-semibold text-gray-700">Confiance observée</div>
-              <div className="text-2xl font-bold text-primary-700">{observedPct}%</div>
-              <div className="text-xs text-gray-600 mt-1">Calculée à partir des émotions</div>
+            <div className="border rounded-lg p-4 bg-amber-50 border-amber-200">
+              <div className="text-sm font-semibold text-amber-900">Confiance Observée</div>
+              <div className="text-3xl font-bold text-amber-600 mt-2">{observedPct}%</div>
+              <div className="text-xs text-amber-700 mt-1">Calculée à partir des émotions</div>
             </div>
           </div>
 
-          <div className="border rounded-xl p-4 mb-8">
-            <div className="text-sm font-semibold text-gray-800 mb-3">Biais cognitifs (détection)</div>
-            <div className="flex flex-wrap gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${dkOn ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
-                Dunning-Kruger: {dkOn ? 'détecté' : 'non détecté'}
+          {/* Bias Detection */}
+          <div className="border rounded-lg p-6 mb-8 bg-gray-50">
+            <div className="text-lg font-bold text-gray-800 mb-4">Analyse Métacognitive</div>
+            <div className="flex flex-wrap gap-3 mb-4">
+              <span className={`px-4 py-2 rounded-full text-sm font-semibold ${dkOn ? 'bg-red-100 text-red-900 border border-red-300' : 'bg-gray-100 text-gray-700 border border-gray-300'}`}>
+                🔍 Dunning-Kruger: {dkOn ? 'Détecté' : 'Non détecté'}
               </span>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${impOn ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
-                Imposteur: {impOn ? 'détecté' : 'non détecté'}
+              <span className={`px-4 py-2 rounded-full text-sm font-semibold ${impOn ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-gray-100 text-gray-700 border border-gray-300'}`}>
+                ⚠️ Syndrome de l'imposteur: {impOn ? 'Détecté' : 'Non détecté'}
               </span>
             </div>
 
             {hasBiasNotes && (
-              <div className="mt-4 text-sm text-gray-700">
-                <div className="font-semibold mb-2">Notes</div>
-                <ul className="list-disc pl-5 space-y-1">
+              <div className="text-sm text-gray-700 mt-4 p-4 bg-white rounded border border-gray-200">
+                <div className="font-bold mb-3 text-gray-800">Observations & Recommandations</div>
+                <ul className="list-disc pl-5 space-y-2">
                   {results.bias_notes.slice(0, 5).map((n, idx) => (
-                    <li key={`bias-note-${idx}`}>{n}</li>
+                    <li key={`bias-note-${idx}`} className="text-gray-700">{n}</li>
                   ))}
                 </ul>
               </div>
             )}
           </div>
 
+          {/* Visualizations Section with Tabs */}
+          <div className="border rounded-lg p-6 mb-8 bg-gray-50">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Analyse Détaillée</h2>
+
+              {/* Tab Navigation */}
+              <div className="flex flex-wrap gap-2 border-b border-gray-300 pb-4">
+                {[
+                  { id: 'knowledge', label: '📈 Courbe de Connaissance', icon: '📈' },
+                  { id: 'confidence', label: '📊 Progression Confiance', icon: '📊' },
+                  { id: 'emotions', label: '😊 Distribution Émotions', icon: '😊' },
+                  { id: 'timeseries', label: '⏱️ Évolution Temporelle', icon: '⏱️' },
+                  { id: 'accuracy', label: '✅ Taux de Réussite', icon: '✅' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setChartTab(tab.id)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                      chartTab === tab.id
+                        ? 'bg-primary-600 text-white shadow-md'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:border-primary-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Chart Display */}
+            <div className="bg-white p-6 rounded-lg">
+              {chartTab === 'knowledge' && <KnowledgeCurveChart answers={answers} />}
+              {chartTab === 'confidence' && <ConfidenceProgressionChart answers={answers} emotionHistory={emotionHistory} />}
+              {chartTab === 'emotions' && <EmotionRadarChart emotionHistory={emotionHistory} />}
+              {chartTab === 'timeseries' && <EmotionTimeSeriesChart emotionHistory={emotionHistory} />}
+              {chartTab === 'accuracy' && <CorrectAnswerRateChart answers={answers} />}
+            </div>
+          </div>
+
+          {/* Action Buttons */}
           <div className="border-t pt-6">
             <button
               onClick={async () => {
                 downloadReport()
               }}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center mb-4"
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center mb-4 shadow-lg transition-all"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Télécharger le rapport d'évaluation
+              Télécharger le rapport détaillé
             </button>
             <button
               onClick={sendEmailReport}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center mb-4"
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-6 rounded-lg flex items-center justify-center shadow-lg transition-all"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h10m-7 4h10M7 16h10" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               Envoyer le rapport par email
             </button>
-            <div className="mt-8" />
           </div>
         </div>
       </div>

@@ -73,7 +73,31 @@ LLM_PROVIDER=ollama
 OLLAMA_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=mistral
 MEDIAPIPE_ENABLED=false
+
+# Configuration email (optionnel)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=votre-email@gmail.com
+SMTP_PASSWORD=votre-mot-de-passe-app
+FROM_EMAIL=votre-email@gmail.com
 ```
+
+### Configuration Email (Optionnel)
+
+Pour activer l'envoi de rapports par email:
+
+1. **Gmail**: Créez un mot de passe d'application
+   - Allez dans [Paramètres Google](https://myaccount.google.com/security)
+   - "Vérification en 2 étapes" > "Mots de passe d'application"
+   - Générer un mot de passe pour "Mail"
+
+2. **Variables d'environnement**:
+   ```env
+   SMTP_USERNAME=votre-email@gmail.com
+   SMTP_PASSWORD=votre-mot-de-passe-app
+   ```
+
+3. **Sans configuration**: Les emails sont loggés dans la console (mode développement)
 
 ## 📊 Utilisation
 

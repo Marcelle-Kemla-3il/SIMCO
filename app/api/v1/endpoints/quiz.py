@@ -12,6 +12,9 @@ import logging
 import io
 import os
 import re
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 try:
     import matplotlib
@@ -28,6 +31,45 @@ except Exception:
     canvas = None
 
 router = APIRouter()
+
+
+def send_email(to_email: str, subject: str, body: str) -> bool:
+    """Send email using SMTP. For development, uses a simple SMTP server."""
+    try:
+        # Get SMTP configuration from environment
+        smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+        smtp_port = int(os.getenv('SMTP_PORT', '587'))
+        smtp_username = os.getenv('SMTP_USERNAME', '')
+        smtp_password = os.getenv('SMTP_PASSWORD', '')
+        from_email = os.getenv('FROM_EMAIL', smtp_username)
+
+        if not smtp_username or not smtp_password:
+            logging.warning("SMTP credentials not configured, logging email instead")
+            logging.info(f"Email to {to_email}: {subject}\n{body}")
+            return True
+
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = from_email
+        msg['To'] = to_email
+        msg['Subject'] = subject
+
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Send email
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(smtp_username, smtp_password)
+        text = msg.as_string()
+        server.sendmail(from_email, to_email, text)
+        server.quit()
+
+        logging.info(f"Email sent successfully to {to_email}")
+        return True
+
+    except Exception as e:
+        logging.error(f"Failed to send email: {str(e)}")
+        return False
 
 
 def _questions_uniqueness_ratio(qs):
@@ -599,36 +641,38 @@ async def send_email_report(
         
         # Create email content
         email_content = f"""
-        RAPPORT DE TEST SIMCO
-        
-        Utilisateur: {session.user_name}
-        Email: {email}
-        Matière: {session.subject}
-        Niveau: {session.level}
-        
-        RÉSULTATS:
-        • Score: {score_percentage:.1f}%
-        • Questions correctes: {correct_count}/{total_count}
-        • Date: {session.started_at.strftime('%d/%m/%Y %H:%M')}
-        
-        Test effectué avec succès !
-        
-        ---
-        SIMCO - Système Intelligent de Monitoring Cognitif et Optimisation
+RAPPORT DE TEST SIMCO
+
+Utilisateur: {session.user_name}
+Email: {email}
+Matière: {session.subject}
+Niveau: {session.level}
+
+RÉSULTATS:
+• Score: {score_percentage:.1f}%
+• Questions correctes: {correct_count}/{total_count}
+• Date: {session.started_at.strftime('%d/%m/%Y %H:%M')}
+
+Test effectué avec succès !
+
+---
+SIMCO - Système Intelligent de Monitoring Cognitif et Optimisation
         """
-        
-        # For now, just log the email (would need SMTP configuration for real sending)
-        logging.info(f"Email report for session {session_id}:")
-        logging.info(f"To: {email}")
-        logging.info(f"Content: {email_content}")
-        
-        return {
-            "success": True,
-            "message": "Rapport envoyé par email avec succès",
-            "email": email,
-            "score": score_percentage,
-            "test_completed": True
-        }
+
+        # Send the email
+        subject = f"Rapport de test SIMCO - {session.subject} ({score_percentage:.1f}%)"
+        email_sent = send_email(email, subject, email_content)
+
+        if email_sent:
+            return {
+                "success": True,
+                "message": "Rapport envoyé par email avec succès",
+                "email": email,
+                "score": score_percentage,
+                "test_completed": True
+            }
+        else:
+            raise HTTPException(status_code=500, detail="Erreur lors de l'envoi de l'email")
         
     except Exception as e:
         logging.error(f"Error sending email report: {str(e)}")

@@ -622,7 +622,10 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
   const startQuiz = async () => {
     const ok = await startCamera()
     if (!ok) {
-      return
+      // If camera permission is denied or unsupported, continue without camera to avoid blocking quiz start.
+      setCameraError('La caméra est désactivée. Le quiz démarre sans suivi visuel.')
+      setCameraEnabled(false)
+      setStreamRef(null)
     }
     setShowReadyScreen(false)
     setCurrentStep(5)
@@ -949,6 +952,17 @@ const QuizPage = ({ subject: propSubject, level: propLevel }) => {
 
   // Step 5: Quiz Interface
   if (currentStep === 5) {
+    if (!question) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Préparation du quiz...</h2>
+            <p className="text-gray-600">Un problème est survenu en chargeant les questions. Veuillez revenir en arrière et relancer.</p>
+            <button onClick={() => setCurrentStep(3)} className="mt-4 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg">Revenir</button>
+          </div>
+        </div>
+      )
+    }
     return (
       <div key={`step-${currentStep}`} className="h-screen flex flex-col bg-gray-900">
         {/* Header */}

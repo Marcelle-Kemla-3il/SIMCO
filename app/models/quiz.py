@@ -22,13 +22,18 @@ class QuizSession(Base):
     id = Column(Integer, primary_key=True, index=True)
     quiz_id = Column(Integer, ForeignKey("quizzes.id"), nullable=False)
     student_id = Column(String(100), nullable=False)  # Simple identifier
+    user_name = Column(String(200), nullable=True)  # Nom de l'utilisateur
+    user_email = Column(String(320), nullable=True, index=True)  # Email de l'utilisateur
+    subject = Column(String(100), nullable=True)  # Matière
+    level = Column(String(50), nullable=True)  # Niveau
+    class_level = Column(String(50), nullable=True)  # Classe/année/niveau précis
     started_at = Column(DateTime(timezone=True), server_default=func.now())
     completed_at = Column(DateTime(timezone=True), nullable=True)
     
     # Relationships
     quiz = relationship("Quiz", back_populates="sessions")
     answers = relationship("Answer", back_populates="session")
-    cognitive_profile = relationship("CognitiveProfile", back_populates="session", uselist=False)
+    emotion_events = relationship("EmotionEvent", back_populates="session")
 
 class Answer(Base):
     __tablename__ = "answers"
@@ -43,4 +48,18 @@ class Answer(Base):
     
     # Relationships
     session = relationship("QuizSession", back_populates="answers")
-    facial_analysis = relationship("FacialAnalysis", back_populates="answer", uselist=False)
+
+
+class EmotionEvent(Base):
+    __tablename__ = "emotion_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("quiz_sessions.id"), nullable=False, index=True)
+    question_index = Column(Integer, nullable=True)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    faces_count = Column(Integer, nullable=True)
+    dominant_emotion = Column(String(50), nullable=True)
+    emotions = Column(JSON, nullable=True)
+    confidence_score = Column(Float, nullable=True)
+
+    session = relationship("QuizSession", back_populates="emotion_events")

@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-
 function QuizInterfacePage({
   subject,
   timeRemaining,
@@ -11,82 +9,19 @@ function QuizInterfacePage({
   loading = false,
   currentQuestion = 1,
   totalQuestions = 10,
-  onInteractionData, // New: callback for interaction metrics
 }) {
-  const [interactionMetrics] = useState({
-    questionStartTime: Date.now(),
-    firstInteractionTime: null,
-    answerChanges: [],
-    hoverTimes: {},
-    totalHoverTime: 0,
-    currentHoverStart: null,
-    currentHoverOption: null
-  });
-
-  // Reset interaction metrics when question changes
-  useEffect(() => {
-    interactionMetrics.questionStartTime = Date.now();
-    interactionMetrics.firstInteractionTime = null;
-    interactionMetrics.answerChanges = [];
-    interactionMetrics.hoverTimes = {};
-    interactionMetrics.totalHoverTime = 0;
-    interactionMetrics.currentHoverStart = null;
-    interactionMetrics.currentHoverOption = null;
-  }, [question?.id]);
-
-  const handleOptionClick = (index) => {
-    const now = Date.now();
-    
-    // Track first interaction
-    if (!interactionMetrics.firstInteractionTime) {
-      interactionMetrics.firstInteractionTime = now;
-    }
-    
-    // Track answer changes
-    if (selectedOption !== null && selectedOption !== index) {
-      interactionMetrics.answerChanges.push({
-        from: selectedOption,
-        to: index,
-        timestamp: (now - interactionMetrics.questionStartTime) / 1000
-      });
-    }
-    
-    setSelectedOption(index);
-    
-    // Send interaction data to parent
-    if (onInteractionData) {
-      const timeToFirstClick = interactionMetrics.firstInteractionTime 
-        ? (interactionMetrics.firstInteractionTime - interactionMetrics.questionStartTime) / 1000
-        : 0;
-      
-      onInteractionData({
-        time_to_first_click: parseFloat(timeToFirstClick.toFixed(2)),
-        answer_changes: interactionMetrics.answerChanges.length,
-        answer_change_history: interactionMetrics.answerChanges,
-        hover_times: interactionMetrics.hoverTimes,
-        total_hover_time: parseFloat((interactionMetrics.totalHoverTime / 1000).toFixed(2))
-      });
-    }
+  const normalizeOptionId = (rawId) => {
+    const s = String(rawId ?? '').trim().toUpperCase();
+    if (s === 'UN' || s === '1') return 'A';
+    if (s === 'DEUX' || s === '2') return 'B';
+    if (s === 'TROIS' || s === '3') return 'C';
+    if (s === 'QUATRE' || s === '4') return 'D';
+    if (['A', 'B', 'C', 'D'].includes(s)) return s;
+    return s;
   };
 
-  const handleOptionHover = (index, isEntering) => {
-    const now = Date.now();
-    
-    if (isEntering) {
-      interactionMetrics.currentHoverStart = now;
-      interactionMetrics.currentHoverOption = index;
-    } else if (interactionMetrics.currentHoverStart && interactionMetrics.currentHoverOption === index) {
-      const hoverDuration = now - interactionMetrics.currentHoverStart;
-      interactionMetrics.totalHoverTime += hoverDuration;
-      
-      if (!interactionMetrics.hoverTimes[index]) {
-        interactionMetrics.hoverTimes[index] = 0;
-      }
-      interactionMetrics.hoverTimes[index] += hoverDuration;
-      
-      interactionMetrics.currentHoverStart = null;
-      interactionMetrics.currentHoverOption = null;
-    }
+  const handleOptionClick = (optionId) => {
+    setSelectedOption(normalizeOptionId(optionId));
   };
 
   return (
@@ -155,7 +90,7 @@ function QuizInterfacePage({
 
             <div className="bg-primary-50 border-l-4 border-primary-600 p-4 sm:p-6 md:p-8 rounded-r-xl">
               <p className="text-base sm:text-lg md:text-xl text-gray-800 leading-relaxed whitespace-pre-line font-medium">
-                {question.question}
+                {question?.question || "Chargement de la question..."}
               </p>
             </div>
           </div>
@@ -170,77 +105,78 @@ function QuizInterfacePage({
             </div>
 
             <div className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-              {question.options.map((option) => (
+              {question?.options?.map((option, idx) => {
+                const displayId = ['A', 'B', 'C', 'D'][idx] || normalizeOptionId(option.id);
+                const isSelected = normalizeOptionId(selectedOption) === displayId;
+                const optionKey = `${question?.id ?? question?.question ?? 'q'}-${idx}-${String(option?.text ?? '')}`;
+                return (
                 <button
-                  key={option.id}
-                  onClick={() => handleOptionClick(option.id)}
-                  onMouseEnter={() => handleOptionHover(option.id, true)}
-                  onMouseLeave={() => handleOptionHover(option.id, false)}
+                  key={optionKey}
+                  onClick={() => handleOptionClick(displayId)}
                   className={`w-full text-left p-3 sm:p-4 md:p-6 rounded-xl border-2 transition-all duration-200 transform hover:scale-[1.02] ${
-                    selectedOption === option.id
+                    isSelected
                       ? 'border-primary-600 bg-primary-50 shadow-lg'
                       : 'border-gray-300 bg-white hover:border-primary-400 hover:shadow-md'
                   }`}
                 >
                   <div className="flex items-center space-x-3 sm:space-x-4">
                     <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-base sm:text-lg transition-colors ${
-                      selectedOption === option.id
+                      isSelected
                         ? 'bg-primary-600 text-white'
                         : 'bg-gray-200 text-gray-600'
                     }`}>
-                      {option.id}
+                      {displayId}
                     </div>
                     <div className="flex-1">
                       <p className={`text-sm sm:text-base md:text-lg font-medium ${
-                        selectedOption === option.id ? 'text-primary-900' : 'text-gray-800'
+                        isSelected ? 'text-primary-900' : 'text-gray-800'
                       }`}>
                         {option.text}
                       </p>
                     </div>
-                    {selectedOption === option.id && (
+                    {isSelected && (
                       <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     )}
                   </div>
                 </button>
-              ))}
+                );
+              }) || (
+                <div className="text-center text-gray-500">
+                  <p>Chargement des options...</p>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
             <button
               onClick={submitAnswer}
               disabled={selectedOption === null || loading}
-              className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold py-5 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center text-lg"
+              className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
             >
               {loading ? (
                 <>
-                  <svg className="w-6 h-6 mr-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Envoi en cours...
+                  Soumission en cours...
                 </>
               ) : (
                 <>
-                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  Soumettre la réponse
+                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
-                  {currentQuestion === totalQuestions ? 'Terminer le quiz' : 'Question suivante'}
                 </>
               )}
             </button>
-
-            {selectedOption === null && !loading && (
-              <p className="text-center text-sm text-amber-600 mt-4 font-medium">
-                ⚠️ Veuillez sélectionner une option avant de soumettre
-              </p>
-            )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default QuizInterfacePage
+export default QuizInterfacePage;

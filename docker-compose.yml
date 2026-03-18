@@ -1,64 +1,78 @@
-version: '3.8'
-
 services:
-  # Backend FastAPI
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: simco-backend
-    ports:
-      - "8000:8000"
+  db:
+    image: postgres:16-alpine
     environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - TRAINING_DATA_PATH=/app/data/training
-      - MODELS_PATH=/app/data/models
+      POSTGRES_DB: simco
+      POSTGRES_USER: simco
+      POSTGRES_PASSWORD: simco_password
+    ports:
+      - "5432:5432"
     volumes:
-      - ./backend:/app
-      - backend-data:/app/data
-    depends_on:
-      - ollama
-    networks:
-      - simco-network
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - simco_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U simco -d simco"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
 
-  # Frontend React (Vite)
-  frontend:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+      - .env.docker
+    environment:
+      DATABASE_URL: postgresql+psycopg2://simco:simco_password@db:5432/simco
+      LLM_PROVIDER: mistral
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      MISTRAL_API_URL: ${MISTRAL_API_URL}
+      MISTRAL_MODEL: ${MISTRAL_MODEL}
+      OLLAMA_URL: http://host.docker.internal:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-mistral}
+      LOG_LEVEL: INFO
+      CV_SERVICE_URL: http://cv:8090
+    depends_on:
+      db:
+        condition: service_healthy
+      cv:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  cv:
+    build:
+      context: .
+      dockerfile: cv.Dockerfile
+    environment:
+      LOG_LEVEL: INFO
+    command: ["python", "-m", "uvicorn", "app_cv.main:app", "--host", "0.0.0.0", "--port", "8090"]
+    ports:
+      - "8090:8090"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+    restart: unless-stopped
+
+  web:
     build:
       context: ./quiz-frontend
-      dockerfile: Dockerfile
-    container_name: simco-frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
+    env_file:
+      - .env
+      - .env.docker
     ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_BASE_URL=http://localhost:8000
-    volumes:
-      - ./quiz-frontend:/app
-      - /app/node_modules
+      - "80:80"
     depends_on:
-      - backend
-    networks:
-      - simco-network
-    command: npm run dev -- --host 0.0.0.0
-
-  # Ollama with Mistral
-  ollama:
-    image: ollama/ollama:latest
-    container_name: simco-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    networks:
-      - simco-network
-    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull mistral && wait"]
+      - api
+    restart: unless-stopped
 
 volumes:
-  backend-data:
-    driver: local
-  ollama-data:
-    driver: local
-
-networks:
-  simco-network:
-    driver: bridge
+  simco_db_data:

@@ -1,114 +1,121 @@
 # SIMCO
-<<<<<<< HEAD
-Système Intelligent Multimodal d’Évaluation Cognitive
-=======
 
-SIMCO (Système Intelligent Multimodal d'Évaluation Cognitive) est une plateforme d'évaluation cognitive avancée qui combine intelligence artificielle, analyse comportementale par webcam, et auto-évaluation de la confiance pour offrir une analyse complète des performances et de la métacognition.
+**Système Intelligent Multimodal d'Évaluation Cognitive**
 
-## Fonctionnalités principales
+SIMCO est une plateforme d'évaluation cognitive avancée qui combine intelligence artificielle, analyse comportementale et auto-évaluation pour offrir une analyse complète des performances.
 
-- **Génération automatique de quiz** (IA Mistral via Ollama)
-- **Analyse comportementale en temps réel** (détection du stress, attention, confiance via webcam)
-- **Collecte de données pour l'entraînement de modèles ML personnalisés**
-- **Interface utilisateur moderne et responsive** (React + TailwindCSS)
-- **Résultats détaillés avec feedback personnalisé**
-- **Pipeline de formation et calibration de modèles** (scikit-learn)
+## 🚀 Démarrage rapide
 
-## Architecture
-
-- **Backend** : FastAPI (Python), intégration IA (Ollama/Mistral), endpoints REST, pipeline ML
-- **Frontend** : React (Vite), TailwindCSS, MediaPipe pour la détection faciale
-- **ML/Training** : scikit-learn, pandas, joblib, scripts de migration et d'entraînement
-
-## Démarrage rapide
-
-### Avec Docker (recommandé)
-
-```bash
-# Lancer le setup automatique
-./docker-setup.sh    # Linux/Mac
-# ou
-.\docker-setup.ps1   # Windows
-
-# Les services seront disponibles sur :
-# - Frontend: http://localhost:5173
-# - Backend:  http://localhost:8000
-# - Ollama:   http://localhost:11434
-```
-
-### Installation manuelle
-
-#### Prérequis
+### Prérequis
 - Python 3.10+
 - Node.js 18+
 - Ollama (pour Mistral)
 
-#### Installation
+### Installation Windows
+```bash
+# Installation complète et lancement
+install_full.bat
+```
 
+### Lancement manuel
 ```bash
 # Backend
-cd backend
-python -m venv venv
-source venv/bin/activate  # ou venv\Scripts\activate sous Windows
-pip install -r requirements.txt
+cd SIMCO
+venv\Scripts\activate
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8080
 
-# Frontend
-cd ../quiz-frontend
-npm install
-```
-
-### Lancer le backend
-```bash
-cd backend
-uvicorn main:app --reload
-```
-
-### Lancer le frontend
-```bash
+# Frontend (autre terminal)
 cd quiz-frontend
 npm run dev
 ```
 
-### Lancer Ollama avec Mistral
+## 🌐 Accès
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://127.0.0.1:8080
+- **Documentation API**: http://127.0.0.1:8080/docs
+
+## 📋 Fonctionnalités
+
+- **Génération automatique de quiz** (IA Mistral via Ollama)
+- **Analyse comportementale** (webcam, détection de stress/attention)
+- **Évaluation de la confiance** (métaconnaissance Dunning-Kruger)
+- **Interface moderne** (React + TailwindCSS)
+- **Résultats détaillés** avec feedback personnalisé
+
+## 🏗️ Architecture
+
+```
+SIMCO/
+├── app/                    # Backend FastAPI
+│   ├── api/v1/            # Endpoints API
+│   ├── core/               # Configuration, base de données
+│   ├── models/             # Modèles SQLAlchemy
+│   ├── services/           # Services (LLM, ML, vision)
+│   └── schemas/            # Schémas Pydantic
+├── quiz-frontend/          # Frontend React
+│   ├── src/
+│   │   ├── components/     # Composants React
+│   │   └── pages/         # Pages principales
+│   └── public/            # Fichiers statiques
+├── venv/                  # Environnement Python
+├── simco.db              # Base de données SQLite
+├── requirements.txt        # Dépendances Python
+└── .env                  # Configuration environnement
+```
+
+## ⚙️ Configuration
+
+Variables d'environnement (`.env`):
+```env
+DATABASE_URL=sqlite:///./simco.db
+LLM_PROVIDER=ollama
+OLLAMA_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=mistral
+MEDIAPIPE_ENABLED=false
+```
+
+## 📊 Utilisation
+
+1. **Accédez** à http://localhost:5173
+2. **Remplissez** vos informations personnelles
+3. **Choisissez** matière et niveau
+4. **Lancez** un quiz en mode plein écran
+5. **Répondez** aux 10 questions
+6. **Évaluez** votre confiance globale
+7. **Consultez** vos résultats détaillés
+
+## 🤖 Ollama
+
+Si Ollama n'est pas installé:
 ```bash
-ollama run mistral
+# Installation (Windows)
+winget install Ollama.Ollama
+
+# Lancement du service
+ollama serve
+
+# Installation du modèle
+ollama pull mistral
 ```
 
-## Utilisation
-- Accédez à l'interface sur [http://localhost:5173](http://localhost:5173)
-- Lancez un quiz, autorisez la webcam, répondez aux questions
-- À la fin, évaluez votre confiance globale
-- Consultez les résultats détaillés et l'analyse comportementale
+## 🛠️ Développement
 
-## Structure du projet
-
-```
-backend/
-  main.py
-  requirements.txt
-  Dockerfile
-  ...
-quiz-frontend/
-  src/
-    components/
-      QuizPage.jsx
-      WebcamAnalyzer.jsx
-      ...
-  Dockerfile
-  ...
-docker-compose.yml
-docker-setup.sh
-docker-setup.ps1
+### Backend
+```bash
+cd SIMCO
+venv\Scripts\activate
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
 ```
 
-## Données et entraînement ML
-- Les données de session sont stockées dans `backend/data/training/sessions.jsonl`
-- Les modèles entraînés sont dans `backend/data/models/`
-- Scripts d'entraînement dans `backend/ml/`
+### Frontend
+```bash
+cd quiz-frontend
+npm install
+npm run dev
+```
 
-## Auteurs
-- Guy (MRGUY10)
+## 📝 Licence
 
-## Licence
-MIT
->>>>>>> origin/jordan
+MIT License

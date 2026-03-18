@@ -1,1052 +1,763 @@
-import { useState, useEffect, useRef } from 'react'
-import QuizInterfacePage from './QuizInterfacePage'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://127.0.0.1:8080'
 
-function QuizPage({ onBackToHome }) {
+const QuizPage = ({ subject: propSubject, level: propLevel }) => {
   // Multi-step state
   const [currentStep, setCurrentStep] = useState(1)
   
   // User information
   const [userName, setUserName] = useState('')
-  const [userAge, setUserAge] = useState('')
-  const [userAcademicLevel, setUserAcademicLevel] = useState('lycée')
   const [userEmail, setUserEmail] = useState('')
   
   // Quiz settings
-  const [subject, setSubject] = useState('mathématiques')
-  const [level, setLevel] = useState('lycée')
-  const [userInfo, setUserInfo] = useState('')
+  const [subject, setSubject] = useState(propSubject || 'mathématiques')
+  const [level, setLevel] = useState(propLevel || 'lycée')
+  const [classLevel, setClassLevel] = useState('')
+  const [sector, setSector] = useState('informatique_data')
+  const [difficulty, setDifficulty] = useState('medium')
   
   // Quiz state
   const [questions, setQuestions] = useState([])
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [question, setQuestion] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [confidence, setConfidence] = useState(50)
   const [selectedOption, setSelectedOption] = useState(null)
+  const [finalDeclaredConfidence, setFinalDeclaredConfidence] = useState(50)
+  const [timeRemaining, setTimeRemaining] = useState(10)
+  const [autoSubmittedKey, setAutoSubmittedKey] = useState(null)
+  const [cameraEnabled, setCameraEnabled] = useState(false)
+  const [cameraError, setCameraError] = useState(null)
+  const [facesCount, setFacesCount] = useState(null)
+  const [dominantEmotion, setDominantEmotion] = useState(null)
+  const [videoEl, setVideoEl] = useState(null)
+  const [streamRef, setStreamRef] = useState(null)
   const [sessionId, setSessionId] = useState(null)
-  const [error, setError] = useState(null)
-  const [showResults, setShowResults] = useState(false)
   const [results, setResults] = useState(null)
   const [answers, setAnswers] = useState([])
+  const [generationError, setGenerationError] = useState(null)
+  const [generationWarning, setGenerationWarning] = useState(null)
+  const [globalConfidenceSubmitted, setGlobalConfidenceSubmitted] = useState(false)
   
-  // Timer state
-  const [timeRemaining, setTimeRemaining] = useState(1200) // 20 minutes for 10 questions
-  const [testStarted, setTestStarted] = useState(false)
-  const [testEnded, setTestEnded] = useState(false)
-  const timerRef = useRef(null)
-  
-  // Interaction tracking
-  const [interactionData, setInteractionData] = useState(null)
-  
-  // Ready to start screen (before countdown)
+  // UI state
   const [showReadyScreen, setShowReadyScreen] = useState(false)
-  
-  // Countdown before quiz starts
-  const [showCountdown, setShowCountdown] = useState(false)
-  const [countdownValue, setCountdownValue] = useState(5)
-  
-  // Fullscreen warning
-  const [showFullscreenWarning, setShowFullscreenWarning] = useState(false)
-  const [fullscreenWarningTime, setFullscreenWarningTime] = useState(10)
-  const fullscreenWarningTimerRef = useRef(null)
-  
-  // Confidence modal (shown after answer submission)
-  const [showConfidenceModal, setShowConfidenceModal] = useState(false)
-  const [pendingAnswerData, setPendingAnswerData] = useState(null)
+  const isMountedRef = useRef(true)
+  const allowCameraStateUpdatesRef = useRef(false)
+  const questionStartMsRef = useRef(null)
+  const noFaceSinceMsRef = useRef(null)
 
-  // Fullscreen management with 10-second warning
-  useEffect(() => {
-    if (testStarted && !testEnded) {
-      const handleFullscreenChange = () => {
-        if (!document.fullscreenElement) {
-          // Clear any existing timer first
-          if (fullscreenWarningTimerRef.current) {
-            clearInterval(fullscreenWarningTimerRef.current)
-          }
-          
-          // User exited fullscreen - show 10 second warning
-          setShowFullscreenWarning(true)
-          setFullscreenWarningTime(10)
-          
-          // Start countdown timer
-          let countdown = 10
-          fullscreenWarningTimerRef.current = setInterval(() => {
-            countdown--
-            setFullscreenWarningTime(countdown)
-            
-            if (countdown <= 0) {
-              // Time's up - end test automatically
-              clearInterval(fullscreenWarningTimerRef.current)
-              endTest('Vous n\'avez pas repris le mode plein écran. Le test est terminé.')
-            }
-          }, 1000)
-        } else if (document.fullscreenElement) {
-          // User returned to fullscreen - cancel warning
-          setShowFullscreenWarning(false)
-          if (fullscreenWarningTimerRef.current) {
-            clearInterval(fullscreenWarningTimerRef.current)
-            fullscreenWarningTimerRef.current = null
-          }
-        }
+  const WarningBanner = generationWarning ? (
+    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+      {generationWarning}
+    </div>
+  ) : null
+
+  const startCamera = useCallback(async () => {
+    setCameraError(null)
+    try {
+      if (!navigator?.mediaDevices?.getUserMedia) {
+        throw new Error('CAMERA_UNSUPPORTED')
       }
 
-      document.addEventListener('fullscreenchange', handleFullscreenChange)
-      document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
-      document.addEventListener('mozfullscreenchange', handleFullscreenChange)
-      document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        },
+        audio: false
+      })
 
-      return () => {
-        document.removeEventListener('fullscreenchange', handleFullscreenChange)
-        document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
-        document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
-        document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
-        if (fullscreenWarningTimerRef.current) {
-          clearInterval(fullscreenWarningTimerRef.current)
-        }
-      }
-    }
-  }, [testStarted, testEnded])
-
-  // Timer management (pauses during fullscreen warning)
-  useEffect(() => {
-    if (testStarted && !testEnded && timeRemaining > 0 && !showFullscreenWarning) {
-      timerRef.current = setInterval(() => {
-        setTimeRemaining((prev) => {
-          if (prev <= 1) {
-            endTest('Le temps est écoulé !')
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-
-      return () => {
-        if (timerRef.current) {
-          clearInterval(timerRef.current)
-        }
-      }
-    } else if (showFullscreenWarning && timerRef.current) {
-      // Pause timer during fullscreen warning
-      clearInterval(timerRef.current)
-    }
-  }, [testStarted, testEnded, timeRemaining, showFullscreenWarning])
-  
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (fullscreenWarningTimerRef.current) {
-        clearInterval(fullscreenWarningTimerRef.current)
-      }
+      setStreamRef(stream)
+      setCameraEnabled(true)
+      return true
+    } catch (e) {
+      setCameraEnabled(false)
+      const name = e?.name || ''
+      const msg =
+        name === 'NotAllowedError' || name === 'PermissionDeniedError'
+          ? "Veuillez autoriser la caméra pour démarrer le quiz."
+          : "Impossible d'activer la caméra. Vérifiez votre navigateur et réessayez."
+      setCameraError(msg)
+      return false
     }
   }, [])
 
-  const formatTime = (seconds) => {
+  const normalizeOptionId = useCallback((rawId) => {
+    const s = String(rawId ?? '').trim().toUpperCase()
+    if (s === 'UN' || s === '1') return 'A'
+    if (s === 'DEUX' || s === '2') return 'B'
+    if (s === 'TROIS' || s === '3') return 'C'
+    if (s === 'QUATRE' || s === '4') return 'D'
+    if (['A', 'B', 'C', 'D'].includes(s)) return s
+    return s
+  }, [])
+
+  const getDisplayOptionId = useCallback((option, idx) => {
+    return ['A', 'B', 'C', 'D'][idx] || normalizeOptionId(option?.id)
+  }, [normalizeOptionId])
+
+  const formatTime = useCallback((seconds) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
+  }, [])
 
-  const endTest = (message) => {
-    setTestEnded(true)
-    setTestStarted(false)
-    if (timerRef.current) {
-      clearInterval(timerRef.current)
-    }
-    // Exit fullscreen
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(err => console.error(err))
-    }
-    alert(message)
-  }
+  const showQuizResults = useCallback(async () => {
+    try {
+      const [sessionResp, reportResp] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/v1/quiz/sessions/${sessionId}`),
+        fetch(`${API_BASE_URL}/api/v1/quiz/sessions/${sessionId}/report`)
+      ])
 
-  const handleUserInfoSubmit = (e) => {
-    e.preventDefault()
-    setCurrentStep(2)
-  }
+      const sessionData = sessionResp.ok ? await sessionResp.json() : null
+      const reportData = reportResp.ok ? await reportResp.json() : null
 
-  const handlePreferencesSubmit = () => {
-    setCurrentStep(3) // Move to instructions
-  }
-  
-  const startTest = async () => {
-    await generateQuestions()
-  }
-  
-  const generateQuestions = async () => {
-    // Generate 10 questions from backend
-    setLoading(true)
-    setError(null)
-    setCurrentStep(4) // Move to quiz (shows loading)
+      const correctAnswersCount = answers.filter(ans => ans.isCorrect).length
+      const totalQuestionsAnswered = answers.length
+      const calculatedPercentage = totalQuestionsAnswered > 0 ? Math.round((correctAnswersCount / totalQuestionsAnswered) * 100) : 0
+
+      const declaredGlobal = reportData?.confidence?.declared_global
+      const observedAvg = reportData?.confidence?.observed_avg
+      const biasFlags = reportData?.biases?.flags
+      const biasNotes = reportData?.biases?.notes
+
+      const results = {
+        percentage: typeof reportData?.results?.score_percentage === 'number'
+          ? Math.round(reportData.results.score_percentage)
+          : calculatedPercentage,
+        score: correctAnswersCount * 10,
+        total_questions: sessionData?.total_questions || reportData?.quiz?.total_questions || totalQuestionsAnswered,
+        answered_count: reportData?.results?.answered || totalQuestionsAnswered,
+        declared_confidence: typeof declaredGlobal === 'number' ? declaredGlobal : 0.5,
+        observed_confidence: typeof observedAvg === 'number' ? observedAvg : 0.5,
+        bias_flags: {
+          dunning_kruger: Boolean(biasFlags?.dunning_kruger),
+          impostor: Boolean(biasFlags?.impostor)
+        },
+        bias_notes: Array.isArray(biasNotes) ? biasNotes : [],
+        question_results: answers.map(ans => ({
+          user_answer: ans.selectedOption,
+          is_correct: ans.isCorrect
+        }))
+      }
+
+      setResults(results)
+      setCurrentStep(6)
+    } catch (error) {
+      console.error('Error showing results:', error)
+      // Fallback to basic results
+      const correctAnswersCount = answers.filter(ans => ans.isCorrect).length
+      const totalQuestionsAnswered = answers.length
+      const calculatedPercentage = totalQuestionsAnswered > 0 ? Math.round((correctAnswersCount / totalQuestionsAnswered) * 100) : 0
       
+      setResults({
+        percentage: calculatedPercentage,
+        score: correctAnswersCount * 10,
+        total_questions: totalQuestionsAnswered,
+        answered_count: totalQuestionsAnswered,
+        declared_confidence: 0.5,
+        observed_confidence: 0.5,
+        bias_flags: { dunning_kruger: false, impostor: false },
+        bias_notes: []
+      })
+      setCurrentStep(6)
+    }
+  }, [answers, sessionId])
+
+  useEffect(() => {
+    if (currentStep === 5) return
+    setAutoSubmittedKey(null)
+  }, [currentStep])
+
+  useEffect(() => {
+    return () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/generate-quiz?num_questions=10`, {
+        const s = streamRef
+        if (s && typeof s.getTracks === 'function') {
+          s.getTracks().forEach((t) => t.stop())
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [streamRef])
+
+  useEffect(() => {
+    if (level !== 'professionnel') {
+      setSector('informatique_data')
+    }
+  }, [level])
+
+  useEffect(() => {
+    if (level === 'professionnel') {
+      setSubject('informatique')
+    }
+  }, [level])
+
+  const captureAndAnalyzeFrame = useCallback(async () => {
+    if (!videoEl) return
+    if (!cameraEnabled) return
+    if (!videoEl.videoWidth || !videoEl.videoHeight) return
+    if (!sessionId) return
+
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = videoEl.videoWidth
+      canvas.height = videoEl.videoHeight
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(videoEl, 0, 0)
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.7))
+      if (!blob) return
+
+      const form = new FormData()
+      form.append('file', blob, 'frame.jpg')
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/cv/analyze-frame`, {
+        method: 'POST',
+        body: form
+      })
+
+      if (!res.ok) {
+        return
+      }
+
+      const data = await res.json()
+      if (!isMountedRef.current) return
+      const nextFacesCount = typeof data.faces_count === 'number' ? data.faces_count : null
+      const nextDominantEmotion = typeof data.dominant_emotion === 'string' ? data.dominant_emotion : null
+
+      if (typeof nextFacesCount === 'number' && nextFacesCount <= 0) {
+        if (noFaceSinceMsRef.current == null) {
+          noFaceSinceMsRef.current = performance.now()
+        } else {
+          const elapsed = performance.now() - noFaceSinceMsRef.current
+          if (elapsed >= 5000) {
+            alert("Visage non détecté depuis plus de 5 secondes.\nRetour à l'accueil du quiz.")
+            noFaceSinceMsRef.current = null
+            setCurrentStep(1)
+            setSessionId(null)
+            setQuestions([])
+            setQuestion(null)
+            setSelectedOption(null)
+            setFacesCount(null)
+            setDominantEmotion(null)
+            return
+          }
+        }
+      } else {
+        noFaceSinceMsRef.current = null
+      }
+
+      setFacesCount(nextFacesCount)
+      setDominantEmotion(nextDominantEmotion)
+
+      const nextEmotions = (data && typeof data === 'object' && data.emotions && typeof data.emotions === 'object')
+        ? data.emotions
+        : undefined
+
+      try {
+        const params = new URLSearchParams()
+        params.set('session_id', String(sessionId))
+        params.set('question_index', String(currentQuestionIndex))
+        if (typeof nextFacesCount === 'number') params.set('faces_count', String(nextFacesCount))
+        if (nextDominantEmotion) params.set('dominant_emotion', nextDominantEmotion)
+
+        await fetch(`${API_BASE_URL}/api/v1/cv/event?${params.toString()}`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            subject: subject,
-            level: level,
-            user_info: userInfo
+            emotions: nextEmotions
           })
         })
-        
-        if (!response.ok) {
-          throw new Error('Failed to generate quiz')
-        }
-        
-        const data = await response.json()
-        
-        // Format the questions
-        const formattedQuestions = data.questions.map(q => ({
-          id: q.id,
-          question: q.question,
-          options: q.options.map((opt, idx) => ({
-            id: String.fromCharCode(65 + idx), // A, B, C, D
-            text: opt
-          }))
-        }))
-        
-        setQuestions(formattedQuestions)
-        setQuestion(formattedQuestions[0])
-        setSessionId(data.session_id)
-        
-        // Show ready screen - wait for user to click start
-        setShowReadyScreen(true)
-        
-      } catch (error) {
-        console.error('Error generating quiz:', error)
-        setError('Failed to generate quiz. Please try again.')
-        alert('Erreur lors de la génération du quiz. Veuillez réessayer.')
-        setCurrentStep(3) // Go back to instructions
-      } finally {
-        setLoading(false)
-        setRequestingCamera(false)
+      } catch (e) {
+        // non-blocking
       }
-  }
-  
-  const userClickedStart = async () => {
-    // First enter fullscreen
-    const elem = document.documentElement
-    try {
-      if (elem.requestFullscreen) {
-        await elem.requestFullscreen()
-      } else if (elem.webkitRequestFullscreen) {
-        await elem.webkitRequestFullscreen()
-      } else if (elem.mozRequestFullScreen) {
-        await elem.mozRequestFullScreen()
-      } else if (elem.msRequestFullscreen) {
-        await elem.msRequestFullscreen()
-      }
-      
-      // Hide ready screen and show countdown
-      setShowReadyScreen(false)
-      setShowCountdown(true)
-      setCountdownValue(5)
-      
-      // Start countdown
-      const countdownInterval = setInterval(() => {
-        setCountdownValue((prev) => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval)
-            // Start the test
-            setShowCountdown(false)
-            setTestStarted(true)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-      
-    } catch (error) {
-      alert('Le mode plein écran est requis pour commencer le test.')
-      setCurrentStep(3)
+    } catch {
+      // ignore
     }
-  }
+  }, [cameraEnabled, currentQuestionIndex, sessionId, videoEl])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    allowCameraStateUpdatesRef.current = currentStep === 5 && !showReadyScreen
+  }, [currentStep, showReadyScreen])
+
+  useEffect(() => {
+    // Pre-enable camera on the ready screen BEFORE quiz starts.
+    if (currentStep !== 5) return
+    if (!showReadyScreen) return
+    if (cameraEnabled) return
+    startCamera()
+  }, [cameraEnabled, currentStep, showReadyScreen, startCamera])
+
+  useEffect(() => {
+    if (!streamRef || !videoEl) return
+    videoEl.srcObject = streamRef
+    const play = async () => {
+      try {
+        await videoEl.play()
+      } catch {
+        // ignore
+      }
+    }
+    play()
+  }, [streamRef, videoEl])
+
+  useEffect(() => {
+    if (!cameraEnabled) return
+    if ((currentStep !== 5 && currentStep !== 6) || showReadyScreen) return
+    const id = window.setInterval(() => {
+      captureAndAnalyzeFrame()
+    }, 2000)
+    return () => window.clearInterval(id)
+  }, [cameraEnabled, captureAndAnalyzeFrame, currentStep, showReadyScreen])
+
+  useEffect(() => {
+    if (currentStep === 5 || currentStep === 6) return
+    if (!streamRef) return
+    streamRef.getTracks().forEach(t => t.stop())
+    setStreamRef(null)
+    setCameraEnabled(false)
+    setFacesCount(null)
+    setDominantEmotion(null)
+  }, [currentStep, streamRef])
+
+  const submitAnswerInternal = useCallback(async (answerOverride) => {
+    const answerToSend = answerOverride ?? selectedOption
+    if (answerToSend === null) {
+      return
+    }
+
+    if (!sessionId) {
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const startedAt = typeof questionStartMsRef.current === 'number'
+        ? questionStartMsRef.current
+        : null
+      const responseTimeMs = startedAt !== null
+        ? Math.max(0, Math.round(performance.now() - startedAt))
+        : 0
+
+      const response = await fetch(`${API_BASE_URL}/api/v1/quiz/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          question_index: currentQuestionIndex,
+          selected_answer: normalizeOptionId(answerToSend),
+          // Confiance uniquement globale (fin de quiz)
+          confidence_level: 0.5,
+          response_time_ms: responseTimeMs
+        })
+      })
+
+      const data = await response.json()
+
+      setAnswers((prev) => ([...prev, {
+        questionIndex: currentQuestionIndex,
+        selectedOption: normalizeOptionId(answerToSend),
+        confidence: null,
+        isCorrect: data.is_correct
+      }]))
+
+      const isLast = currentQuestionIndex >= questions.length - 1
+
+      if (isLast) {
+        setCurrentStep(6)
+        return
+      }
+
+      setTimeout(() => {
+        setCurrentQuestionIndex((prev) => prev + 1)
+        setSelectedOption(null)
+        setTimeRemaining(10)
+      }, 100)
+    } catch (error) {
+      console.error('Error submitting answer:', error)
+      alert('Erreur lors de la soumission. Veuillez réessayer.')
+    } finally {
+      setLoading(false)
+    }
+  }, [currentQuestionIndex, normalizeOptionId, questions.length, selectedOption, sessionId])
+
+  const submitFinalDeclaredConfidence = useCallback(async () => {
+    if (!sessionId) return
+    try {
+      await fetch(`${API_BASE_URL}/api/v1/quiz/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          session_id: sessionId,
+          question_index: -1,
+          selected_answer: '_',
+          confidence_level: Math.min(1, Math.max(0, Number(finalDeclaredConfidence) / 100)),
+          response_time_ms: 0
+        })
+      })
+      setGlobalConfidenceSubmitted(true)
+    } catch (e) {
+      // non-blocking
+    }
+  }, [finalDeclaredConfidence, sessionId])
+
+  const confirmGlobalConfidence = useCallback(async () => {
+    await submitFinalDeclaredConfidence()
+    await showQuizResults()
+  }, [showQuizResults, submitFinalDeclaredConfidence])
 
   const submitAnswer = async () => {
     if (selectedOption === null) {
       alert('Veuillez sélectionner une réponse avant de soumettre.')
       return
     }
-    
+
+    await submitAnswerInternal(selectedOption)
+  }
+
+  useEffect(() => {
+    if ((currentStep !== 5 && currentStep !== 6) || showReadyScreen) return
+    if (!questions?.length) return
+
+    setQuestion(questions[currentQuestionIndex] || null)
+    setAutoSubmittedKey(`${sessionId ?? 's'}-${currentQuestionIndex}`)
+    questionStartMsRef.current = performance.now()
+  }, [currentQuestionIndex, currentStep, questions, sessionId, showReadyScreen])
+
+  useEffect(() => {
+    if (currentStep !== 5 || showReadyScreen) return
+    if (!questions?.length) return
+    if (!question) return
+
+    setTimeRemaining(10)
+    const intervalId = window.setInterval(() => {
+      setTimeRemaining((prev) => Math.max(0, prev - 1))
+    }, 1000)
+
+    return () => window.clearInterval(intervalId)
+  }, [currentStep, question, questions, showReadyScreen])
+
+  useEffect(() => {
+    if (currentStep !== 5 || showReadyScreen) return
+    if (timeRemaining > 0) return
+    if (!question) return
+    if (loading) return
+
+    const key = `${sessionId ?? 's'}-${currentQuestionIndex}`
+    if (autoSubmittedKey !== key) {
+      return
+    }
+
+    setAutoSubmittedKey(null)
+
+    const fallbackAnswer = 'A'
+    submitAnswerInternal(fallbackAnswer)
+  }, [autoSubmittedKey, currentQuestionIndex, currentStep, loading, question, sessionId, showReadyScreen, submitAnswerInternal, timeRemaining])
+
+  const generateQuestions = async () => {
     setLoading(true)
+    setGenerationError(null)
+    setGenerationWarning(null)
+    setShowReadyScreen(false)
+    setCurrentQuestionIndex(0)
+    setCurrentStep(4)
+    let timeoutId = null
     
     try {
-      // Convert A, B, C, D to 0, 1, 2, 3
-      const answerIndex = selectedOption.charCodeAt(0) - 65
-      const currentQuestion = questions[currentQuestionIndex]
+      const controller = new AbortController()
+      timeoutId = setTimeout(() => controller.abort(), 180000)
+
+      const requestBody = {
+        subject: subject,
+        level: level,
+        difficulty: difficulty,
+        class_level: classLevel,
+        force_refresh: true,
+        num_questions: 20
+      }
       
-      const behavioralData = interactionData ? { interaction: interactionData } : {}
+      if (level === 'professionnel') {
+        requestBody.sector = sector
+      }
       
-      // Submit answer with default confidence (will be updated at the end)
-      const response = await fetch(`${API_BASE_URL}/submit-answer`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/quiz/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          question_id: currentQuestion.id,
-          selected_answer: answerIndex,
-          confidence: 50, // Default value, will ask at end
-          behavioral_data: behavioralData
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId)
       
       if (!response.ok) {
-        throw new Error('Failed to submit answer')
+        let backendMsg = ''
+        try {
+          const contentType = response.headers.get('content-type') || ''
+          if (contentType.includes('application/json')) {
+            const errData = await response.json()
+            backendMsg = String(errData?.detail || errData?.message || '')
+          } else {
+            backendMsg = String(await response.text())
+          }
+        } catch (_) {
+          backendMsg = ''
+        }
+        throw new Error(backendMsg || `Failed to generate quiz (HTTP ${response.status})`)
       }
       
       const data = await response.json()
+      const quiz = Array.isArray(data) ? data[0] : data
       
-      // Store answer without confidence for now
-      setAnswers([...answers, {
-        questionIndex: currentQuestionIndex,
-        selectedOption: selectedOption,
-        confidence: null, // Will be set at the end
-        isCorrect: data.correct
-      }])
+      if (!quiz) {
+        throw new Error('No quiz data received')
+      }
       
-      // Move to next question or show confidence modal for entire quiz
-      if (currentQuestionIndex < questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1)
-        setQuestion(questions[currentQuestionIndex + 1])
-        setSelectedOption(null)
-        setInteractionData(null) // Reset interaction data
+      // Create session
+      const sessionController = new AbortController()
+      const sessionTimeoutId = setTimeout(() => sessionController.abort(), 45000)
+
+      const sessionResponse = await fetch(`${API_BASE_URL}/api/v1/quiz/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          quiz_id: quiz.id,
+          student_id: userName,
+          user_name: userName,
+          user_email: userEmail,
+          subject,
+          level,
+          class_level: classLevel
+        }),
+        signal: sessionController.signal
+      })
+
+      clearTimeout(sessionTimeoutId)
+      
+      if (!sessionResponse.ok) {
+        throw new Error('Failed to create session')
+      }
+      
+      const sessionData = await sessionResponse.json()
+      
+      const totalQuestions = Array.isArray(quiz?.questions) ? quiz.questions.length : 0
+      if (totalQuestions < 10) {
+        throw new Error('QUIZ_TOO_SHORT')
+      }
+      if (totalQuestions < 20) {
+        setGenerationWarning(`Le backend a généré ${totalQuestions} questions sur 20. Le quiz démarre en mode best-effort.`)
+      }
+
+      // Format questions with hardcoded IDs
+      const formattedQuestions = quiz.questions.map((q, idx) => {
+        const options = Array.isArray(q.choices)
+          ? q.choices.map((opt, optionIdx) => ({
+              id: ['A', 'B', 'C', 'D'][optionIdx],
+              rawId: ['A', 'B', 'C', 'D'][optionIdx],
+              text: opt
+            }))
+          : Object.keys(q.choices).map((key, optionIdx) => ({
+              id: ['A', 'B', 'C', 'D'][optionIdx],
+              rawId: key,
+              text: q.choices[key]
+            }))
+        
+        return {
+          id: idx + 1,
+          question: q.question,
+          options: options
+        }
+      })
+      
+      setQuestions(formattedQuestions)
+      setQuestion(formattedQuestions[0])
+      setSessionId(sessionData.id)
+      setShowReadyScreen(true)
+      setCurrentStep(5)
+      setTimeRemaining(10)
+      
+    } catch (error) {
+      console.error('Error generating quiz:', error)
+      const backendDetail = typeof error === 'object' && error && String(error?.message || '')
+      const message = error?.name === 'AbortError'
+        ? 'La génération prend trop de temps. Vérifiez que le backend est démarré puis réessayez.'
+        : (String(error?.message || '').includes('QUIZ_TOO_SHORT')
+          ? 'Le backend a généré moins de 10 questions. Réessayez (force refresh) ou changez matière/niveau.'
+          : (String(error?.message || '').startsWith('Erreur lors de la génération du quiz:')
+            ? String(error?.message)
+            : 'Erreur lors de la génération du quiz. Veuillez réessayez.'))
+
+      setGenerationError(message)
+      setCurrentStep(4)
+    } finally {
+      try {
+        // Safety: ensure we never leave a pending abort timer
+        // if an exception happened before clearTimeout.
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+        }
+      } catch (_) {}
+      setLoading(false)
+    }
+  }
+
+  const cancelGeneration = () => {
+    setLoading(false)
+    setGenerationError(null)
+    setCurrentStep(2)
+  }
+
+  const startQuiz = async () => {
+    const ok = await startCamera()
+    if (!ok) {
+      return
+    }
+    setShowReadyScreen(false)
+    setCurrentStep(5)
+    setTimeRemaining(10) // Reset timer on quiz start
+  }
+
+  const downloadReport = () => {
+    if (!sessionId) {
+      alert('Session inconnue, impossible de générer le PDF.')
+      return
+    }
+
+    const url = `${API_BASE_URL}/api/v1/quiz/sessions/${sessionId}/report.pdf`
+    window.location.assign(url)
+  }
+
+  const sendEmailReport = async () => {
+    if (!userEmail) {
+      alert('Veuillez entrer votre adresse email au début du quiz');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/quiz/send-email-report/${sessionId}?email=${userEmail}`, {
+        method: 'POST'
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('✅ Rapport envoyé par email !');
       } else {
-        // Quiz completed - show confidence modal for overall quiz
-        setShowConfidenceModal(true)
+        alert(`❌ Erreur: ${data.message}`);
       }
     } catch (error) {
-      console.error('Error submitting answer:', error)
-      alert('Erreur lors de la soumission de la réponse. Veuillez réessayer.')
-    } finally {
-      setLoading(false)
-    }
-  }
-  
-  const submitAnswerWithConfidence = async () => {
-    setShowConfidenceModal(false)
-    setLoading(true)
-    
-    try {
-      // Store the overall confidence level
-      // Update all answers with the confidence value
-      const updatedAnswers = answers.map(ans => ({
-        ...ans,
-        confidence: confidence
-      }))
-      setAnswers(updatedAnswers)
-      
-      // Send the confidence level to the backend
-      await fetch(`${API_BASE_URL}/update-confidence`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          session_id: sessionId,
-          confidence: confidence
-        })
-      })
-      
-      // Fetch and show results
-      await showQuizResults()
-    } catch (error) {
-      console.error('Error:', error)
-      alert('Erreur. Veuillez réessayer.')
-    } finally {
-      setLoading(false)
+      console.error('Error sending email report:', error);
+      alert('❌ Erreur lors de l\'envoi de l\'email');
     }
   }
 
-  const showQuizResults = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/quiz-results/${sessionId}`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch results')
-      }
-      
-      const data = await response.json()
-      console.log('Results data:', data)
-      console.log('Question results:', data.question_results)
-      setResults(data)
-      setShowResults(true)
-      setTestStarted(false)
-      setTestEnded(true)
-      
-      // Exit fullscreen
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(err => console.error(err))
-      }
-      
-      // Stop timer
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
-    } catch (error) {
-      console.error('Error fetching results:', error)
-      alert('Erreur lors du chargement des résultats.')
-    }
-  }
-
-  if (currentStep === 4 && !testEnded && !showResults) {
-    // Show ready screen - wait for user to click start
-    if (showReadyScreen) {
-      return (
-        <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900">
-          <div className="text-center max-w-2xl mx-auto px-6">
-            <div className="mb-8">
-              <div className="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h2 className="text-4xl font-bold text-white mb-4">Questions prêtes !</h2>
-              <p className="text-primary-200 text-lg mb-8">
-                Votre quiz de {questions.length} questions est prêt. 
-                <br />
-                Cliquez sur le bouton ci-dessous pour commencer.
-              </p>
-            </div>
-            
-            <div className="bg-white bg-opacity-10 rounded-xl p-6 mb-8 text-left">
-              <h3 className="text-white font-semibold mb-3 flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Rappel important :
-              </h3>
-              <ul className="text-primary-100 text-sm space-y-2">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Le quiz se déroulera en mode plein écran</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Vous aurez 20 minutes pour répondre aux {questions.length} questions</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Ne quittez pas le mode plein écran sous peine de fin de test</span>
-                </li>
-              </ul>
-            </div>
-            
-            <button
-              onClick={userClickedStart}
-              className="bg-white hover:bg-gray-100 text-primary-900 font-bold py-4 px-12 rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-200 text-lg"
-            >
-              <span className="flex items-center">
-                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Commencer le quiz
-              </span>
-            </button>
-          </div>
-        </div>
-      )
-    }
-    
-    // Show countdown screen
-    if (showCountdown) {
-      return (
-        <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 px-4">
-          <div className="text-center">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6 sm:mb-8">Préparez-vous !</h2>
-            <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 mx-auto mb-6 sm:mb-8">
-              <div className="absolute inset-0 border-6 sm:border-8 border-primary-300 rounded-full"></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-6xl sm:text-7xl md:text-9xl font-bold text-white">{countdownValue}</span>
-              </div>
-            </div>
-            <p className="text-primary-200 text-base sm:text-lg md:text-xl px-4">Le quiz démarre dans {countdownValue} seconde{countdownValue > 1 ? 's' : ''}...</p>
-          </div>
-        </div>
-      )
-    }
-    
-    if (loading || !question) {
-      return (
-        <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary-900 via-primary-800 to-primary-900 px-4">
-          <div className="text-center">
-            <div className="relative w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 sm:mb-8">
-              <div className="absolute inset-0 border-6 sm:border-8 border-primary-300 border-t-transparent rounded-full animate-spin"></div>
-              <div className="absolute inset-4 border-6 sm:border-8 border-primary-400 border-t-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <svg className="w-8 h-8 sm:w-12 sm:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              </div>
-            </div>
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 sm:mb-4 px-4">Préparation de votre quiz...</h2>
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-3 h-3 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-              <div className="w-3 h-3 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-3 h-3 bg-primary-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-            </div>
-          </div>
-        </div>
-      )
-    }
-    
+  // Step 1: User Info
+  if (currentStep === 1) {
     return (
-      <>
-        <QuizInterfacePage
-          subject={subject}
-          timeRemaining={timeRemaining}
-          formatTime={formatTime}
-          question={question}
-          selectedOption={selectedOption}
-        setSelectedOption={setSelectedOption}
-        submitAnswer={submitAnswer}
-        loading={loading}
-        currentQuestion={currentQuestionIndex + 1}
-        totalQuestions={questions.length}
-        onInteractionData={setInteractionData}
-      />
-      {/* Fullscreen Warning Modal */}
-      {showFullscreenWarning && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 text-center shadow-2xl">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
-              <svg className="w-8 h-8 sm:w-10 sm:h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">Attention !</h3>
-            <p className="text-sm sm:text-base text-gray-700 mb-4 sm:mb-6">
-              Vous avez quitté le mode plein écran. Veuillez revenir en mode plein écran dans :
-            </p>
-            <div className="text-4xl sm:text-5xl md:text-6xl font-bold text-red-600 mb-4 sm:mb-6">{fullscreenWarningTime}</div>
-            <p className="text-xs sm:text-sm text-gray-500">Le test sera automatiquement terminé si vous ne revenez pas en mode plein écran.</p>
-            <button
-              onClick={async () => {
-                const elem = document.documentElement
-                try {
-                  if (elem.requestFullscreen) {
-                    await elem.requestFullscreen()
-                  } else if (elem.webkitRequestFullscreen) {
-                    await elem.webkitRequestFullscreen()
-                  } else if (elem.mozRequestFullScreen) {
-                    await elem.mozRequestFullScreen()
-                  } else if (elem.msRequestFullscreen) {
-                    await elem.msRequestFullscreen()
-                  }
-                } catch (error) {
-                  console.error('Error entering fullscreen:', error)
-                }
-              }}
-              className="mt-6 bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-6 rounded-lg transition-colors"
-            >
-              Revenir en plein écran
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {/* Confidence Modal - Asked at end of quiz */}
-      {showConfidenceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl">
-            {/* Header */}
-            <div className="mb-6 text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-1">Quiz terminé !</h3>
-              <p className="text-gray-500 text-sm">Dernière étape avant vos résultats</p>
-            </div>
-
-            {/* Question */}
-            <p className="text-center text-gray-800 font-medium mb-2">
-              Quel était votre niveau de confiance global sur l'ensemble du quiz ?
-            </p>
-            <p className="text-center text-xs text-gray-500 mb-6">
-              Cette valeur unique s'appliquera à chacune de vos {questions.length} réponses.
-            </p>
-
-            {/* Slider */}
-            <div className="mb-6">
-              <div className="text-center mb-4">
-                <span className="text-6xl font-bold" style={{ color:
-                  confidence >= 70 ? '#16a34a' :
-                  confidence >= 40 ? '#d97706' :
-                  '#dc2626'
-                }}>{confidence}%</span>
-                <p className="text-sm font-medium mt-1" style={{ color:
-                  confidence >= 70 ? '#16a34a' :
-                  confidence >= 40 ? '#d97706' :
-                  '#dc2626'
-                }}>
-                  {confidence >= 70 ? 'Confiant' : confidence >= 40 ? 'Moyennement confiant' : 'Peu confiant'}
-                </p>
-              </div>
-
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={confidence}
-                onChange={(e) => setConfidence(Number(e.target.value))}
-                className="w-full h-4 rounded-lg appearance-none cursor-pointer mb-3"
-                style={{
-                  background: `linear-gradient(to right, ${
-                    confidence >= 70 ? '#16a34a' : confidence >= 40 ? '#d97706' : '#dc2626'
-                  } 0%, ${
-                    confidence >= 70 ? '#16a34a' : confidence >= 40 ? '#d97706' : '#dc2626'
-                  } ${confidence}%, #e5e7eb ${confidence}%, #e5e7eb 100%)`
-                }}
-              />
-              <div className="flex justify-between text-xs text-gray-400">
-                <span>0% — Pas du tout</span>
-                <span>50%</span>
-                <span>100% — Totalement</span>
-              </div>
-            </div>
-
-            {/* Applied-to-all notice */}
-            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-              <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm text-blue-800">
-                La valeur <strong>{confidence}%</strong> sera attribuée à l'ensemble de vos <strong>{questions.length} questions</strong> pour l'analyse Dunning-Kruger.
-              </p>
-            </div>
-
-            <button
-              onClick={submitAnswerWithConfidence}
-              className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
-            >
-              Voir mes résultats →
-            </button>
-          </div>
-        </div>
-      )}
-      </>
-    )
-  }
-
-  // Results Page
-  if (showResults && results) {
-    const scoreEmoji = results.percentage >= 80 ? '🏆' : results.percentage >= 60 ? '🎯' : results.percentage >= 40 ? '💪' : '📚'
-    const scoreBg = results.percentage >= 80 ? 'from-green-400 to-green-600' : results.percentage >= 60 ? 'from-blue-400 to-blue-600' : results.percentage >= 40 ? 'from-yellow-400 to-yellow-600' : 'from-red-400 to-red-600'
-    const scoreMsg = results.percentage >= 80 ? 'Excellent ! Tu maîtrises très bien ce sujet !' : results.percentage >= 60 ? 'Bien joué ! Continue comme ça !' : results.percentage >= 40 ? 'Pas mal ! Encore un peu de travail !' : 'Continue d\'apprendre, tu vas y arriver !'
-    const dk = results.dunning_kruger
-    const dkDiff = dk ? Math.round(dk.declared_confidence - dk.actual_score) : 0
-    const dkMsg = dk
-      ? dkDiff > 15 ? '😮 Tu pensais savoir plus que tu ne savais !'
-      : dkDiff < -15 ? '🙂 Tu savais plus que tu ne le pensais !'
-      : '🎯 Tu t\'es bien évalué !'
-      : null
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-            <h1 className="text-lg font-bold text-gray-800">📋 Tes Résultats</h1>
-            <button onClick={onBackToHome} className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all">
-              ← Retour
-            </button>
-          </div>
-        </header>
-
-        <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-
-          {/* ── 1. BIG SCORE CARD ── */}
-          <div className={`bg-gradient-to-br ${scoreBg} rounded-3xl p-8 text-white text-center shadow-2xl`}>
-            <div className="text-8xl mb-4">{scoreEmoji}</div>
-            <div className="text-7xl font-black mb-2">{results.percentage}%</div>
-            <p className="text-2xl font-bold mb-4">{scoreMsg}</p>
-            {/* Dots: one per question */}
-            <div className="flex justify-center flex-wrap gap-3 mb-4">
-              {results.question_results.map((qr, idx) => (
-                <div key={idx} className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shadow-md border-2 border-white/40 ${
-                  qr.user_answer === null || qr.user_answer === undefined ? 'bg-white/20' :
-                  qr.is_correct ? 'bg-white text-green-600' : 'bg-white/20'
-                }`} title={`Question ${idx + 1}`}>
-                  {qr.user_answer === null || qr.user_answer === undefined ? '–' : qr.is_correct ? '✓' : '✗'}
-                </div>
-              ))}
-            </div>
-            <p className="text-white/80 text-lg">
-              <strong>{results.score}</strong> bonne{results.score > 1 ? 's' : ''} réponse{results.score > 1 ? 's' : ''} sur <strong>{results.total_questions}</strong> questions
-            </p>
-          </div>
-
-          {/* ── 2. VISUAL SCORE BAR ── */}
-          <div className="bg-white rounded-3xl p-6 shadow-lg">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">📊 Ton score en images</h2>
-            <div className="flex gap-1 rounded-xl overflow-hidden h-10 mb-3">
-              {results.question_results.map((qr, idx) => (
-                <div key={idx} className={`flex-1 flex items-center justify-center text-white text-xs font-bold ${
-                  qr.user_answer === null || qr.user_answer === undefined ? 'bg-gray-300' :
-                  qr.is_correct ? 'bg-green-500' : 'bg-red-400'
-                }`}>
-                  {idx + 1}
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-4 text-sm">
-              <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-green-500 inline-block"></span> Bonne réponse ({results.score})</span>
-              <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-red-400 inline-block"></span> Mauvaise réponse ({results.total_questions - results.score - (results.total_questions - results.answered_count)})</span>
-              {results.total_questions - results.answered_count > 0 && (
-                <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-gray-300 inline-block"></span> Non répondu ({results.total_questions - results.answered_count})</span>
-              )}
-            </div>
-          </div>
-
-          {/* ── 3. CONFIDENCE VS SCORE ── */}
-          {dk && (
-            <div className="bg-white rounded-3xl p-6 shadow-lg">
-              <h2 className="text-xl font-bold text-gray-800 mb-2">🧠 Est-ce que tu te connaissais bien ?</h2>
-              <p className="text-gray-500 text-sm mb-6">On compare ce que tu pensais savoir avec ce que tu savais vraiment.</p>
-
-              {/* Two bars comparison */}
-              <div className="space-y-4 mb-6">
-                <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-700 mb-1">
-                    <span>💬 Ce que tu <strong>pensais</strong> savoir</span>
-                    <span className="text-blue-600 font-bold">{dk.declared_confidence}%</span>
-                  </div>
-                  <div className="w-full bg-blue-100 rounded-full h-8 overflow-hidden">
-                    <div className="h-8 bg-blue-500 rounded-full flex items-center justify-end pr-3 transition-all duration-1000"
-                      style={{ width: `${dk.declared_confidence}%` }}>
-                      <span className="text-white text-xs font-bold">{dk.declared_confidence}%</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm font-medium text-gray-700 mb-1">
-                    <span>✅ Ce que tu <strong>savais vraiment</strong></span>
-                    <span className="text-green-600 font-bold">{dk.actual_score}%</span>
-                  </div>
-                  <div className="w-full bg-green-100 rounded-full h-8 overflow-hidden">
-                    <div className="h-8 bg-green-500 rounded-full flex items-center justify-end pr-3 transition-all duration-1000"
-                      style={{ width: `${dk.actual_score}%` }}>
-                      <span className="text-white text-xs font-bold">{dk.actual_score}%</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Simple verdict */}
-              <div className={`rounded-2xl p-4 text-center ${
-                Math.abs(dkDiff) <= 15 ? 'bg-green-50 border-2 border-green-200' :
-                dkDiff > 15 ? 'bg-orange-50 border-2 border-orange-200' :
-                'bg-blue-50 border-2 border-blue-200'
-              }`}>
-                <p className="text-2xl mb-1">{dkMsg}</p>
-                <p className="text-gray-700 font-medium">
-                  {Math.abs(dkDiff) <= 15
-                    ? 'Tu t\'évalues avec précision. C\'est une super qualité ! 👏'
-                    : dkDiff > 15
-                    ? `Tu te croyais ${dkDiff} points meilleur que tu ne l'es. La prochaine fois, révise avant d'être trop confiant !`
-                    : `Tu étais ${Math.abs(dkDiff)} points meilleur que tu ne le pensais ! Crois en toi !`}
-                </p>
-              </div>
-
-              {/* Per-question confidence bubbles */}
-              {dk.per_question && dk.per_question.length > 0 && (
-                <div className="mt-5">
-                  <p className="text-sm font-semibold text-gray-600 mb-3">Question par question :</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                    {dk.per_question.map((pq) => (
-                      <div key={pq.question_id} className={`rounded-2xl p-3 text-center text-xs font-medium ${
-                        pq.dk_signal === 'overconfident' ? 'bg-orange-100 border border-orange-300' :
-                        pq.dk_signal === 'underconfident' ? 'bg-blue-100 border border-blue-300' :
-                        pq.dk_signal === 'calibrated' ? 'bg-green-100 border border-green-300' :
-                        'bg-gray-100 border border-gray-200'
-                      }`}>
-                        <div className="text-lg mb-1">
-                          {pq.dk_signal === 'overconfident' ? '😮' :
-                           pq.dk_signal === 'underconfident' ? '🙂' :
-                           pq.dk_signal === 'calibrated' ? '🎯' : '–'}
-                        </div>
-                        <div className="font-bold text-gray-700">Q{pq.question_index}</div>
-                        <div className={
-                          pq.dk_signal === 'overconfident' ? 'text-orange-600' :
-                          pq.dk_signal === 'underconfident' ? 'text-blue-600' :
-                          'text-green-600'
-                        }>
-                          {pq.dk_signal === 'overconfident' ? 'Trop confiant' :
-                           pq.dk_signal === 'underconfident' ? 'Pas assez confiant' :
-                           pq.dk_signal === 'calibrated' ? 'Bien évalué' : 'Non répondu'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── 5. TIPS ── */}
-          <div className="bg-white rounded-3xl p-6 shadow-lg">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">💡 Conseils pour toi</h2>
-            <div className="space-y-3">
-              {results.recommendations.map((rec, idx) => {
-                const tipEmojis = ['🚀', '📖', '✏️', '🧩', '🏅']
-                return (
-                  <div key={idx} className="flex items-center gap-3 bg-primary-50 rounded-2xl px-4 py-3 border border-primary-100">
-                    <span className="text-2xl">{tipEmojis[idx % tipEmojis.length]}</span>
-                    <p className="text-gray-700 font-medium">{rec}</p>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* ── 6. QUESTION REVIEW ── */}
-          <div className="bg-white rounded-3xl p-6 shadow-lg">
-            <h2 className="text-xl font-bold text-gray-800 mb-5">🔍 Revoir les questions</h2>
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Informations de l'étudiant</h2>
+          <form onSubmit={(e) => { e.preventDefault(); setCurrentStep(2); }}>
             <div className="space-y-4">
-              {results.question_results.map((qr, idx) => {
-                const wasAnswered = qr.user_answer !== null && qr.user_answer !== undefined
-                const correct = wasAnswered && qr.is_correct
-                const wrong = wasAnswered && !qr.is_correct
-                return (
-                  <div key={idx} className={`rounded-2xl border-2 p-5 ${
-                    !wasAnswered ? 'border-gray-200 bg-gray-50' :
-                    correct ? 'border-green-300 bg-green-50' :
-                    'border-red-200 bg-red-50'
-                  }`}>
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="text-3xl">{!wasAnswered ? '⬜' : correct ? '✅' : '❌'}</span>
-                      <div>
-                        <span className="text-xs font-bold uppercase tracking-wide text-gray-400">Question {idx + 1}</span>
-                        <p className="font-semibold text-gray-900 text-sm sm:text-base">{qr.question}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
-                      {qr.options.map((opt, optIdx) => {
-                        const isCorrect = optIdx === qr.correct_answer
-                        const isSelected = wasAnswered && optIdx === qr.user_answer
-                        return (
-                          <div key={optIdx} className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
-                            isCorrect ? 'bg-green-200 border border-green-400 font-semibold text-green-900' :
-                            isSelected && !isCorrect ? 'bg-red-200 border border-red-400 text-red-800' :
-                            'bg-white border border-gray-200 text-gray-700'
-                          }`}>
-                            <span className="font-bold text-gray-400">{String.fromCharCode(65 + optIdx)})</span>
-                            <span>{opt}</span>
-                            {isCorrect && <span className="ml-auto">✅</span>}
-                            {isSelected && !isCorrect && <span className="ml-auto">❌</span>}
-                          </div>
-                        )
-                      })}
-                    </div>
-                    {!wasAnswered && <p className="text-sm text-gray-400 italic">Tu n'as pas répondu à cette question.</p>}
-                    <div className="bg-white rounded-xl px-4 py-3 border-l-4 border-primary-400">
-                      <p className="text-xs font-bold text-primary-700 mb-1">💡 Explication</p>
-                      <p className="text-sm text-gray-600">{qr.explanation}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* ── 7. BACK BUTTON ── */}
-          <div className="flex justify-center pb-8">
-            <button
-              onClick={onBackToHome}
-              className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold py-4 px-10 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-lg"
-            >
-              🏠 Retour à l'accueil
-            </button>
-          </div>
-
-        </main>
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-primary-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-primary-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={onBackToHome}
-                className="text-primary-600 hover:text-primary-700 flex items-center space-x-2 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span className="font-medium">Retour</span>
-              </button>
-              <div className="h-6 w-px bg-primary-200"></div>
-              <div>
-                <h1 className="text-3xl font-bold text-primary-800">Projet SIMCO</h1>
-                <p className="text-sm text-primary-600 mt-1">Système Intelligent Multimodal d'Évaluation Cognitive</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-primary-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-primary-700 font-medium">En ligne</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Progress Indicator */}
-      {currentStep < 4 && (
-        <div className="bg-white border-b border-primary-200">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="flex items-center justify-between">
-              {[1, 2, 3].map((step) => (
-                <div key={step} className="flex items-center flex-1">
-                  <div className="flex items-center relative">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                      currentStep >= step 
-                        ? 'bg-primary-600 text-white' 
-                        : 'bg-gray-200 text-gray-500'
-                    }`}>
-                      {currentStep > step ? (
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        step
-                      )}
-                    </div>
-                    <span className={`ml-3 font-medium ${
-                      currentStep >= step ? 'text-primary-700' : 'text-gray-500'
-                    }`}>
-                      {step === 1 && 'Informations'}
-                      {step === 2 && 'Préférences'}
-                      {step === 3 && 'Instructions'}
-                    </span>
-                  </div>
-                  {step < 3 && (
-                    <div className={`flex-1 h-1 mx-4 rounded transition-all ${
-                      currentStep > step ? 'bg-primary-600' : 'bg-gray-200'
-                    }`}></div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Step 1: User Information */}
-        {currentStep === 1 && (
-          <div className="bg-white rounded-2xl shadow-xl border border-primary-200 p-8 md:p-12">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Bienvenue !</h2>
-              <p className="text-gray-600">Commençons par quelques informations de base pour personnaliser votre expérience</p>
-            </div>
-
-            <form onSubmit={handleUserInfoSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nom complet <span className="text-red-500">*</span>
+                  Nom/ID étudiant <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Ex: Jean Dupont"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Entrez votre nom ou ID"
                   required
-                  className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white text-gray-900"
                 />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Âge <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={userAge}
-                    onChange={(e) => setUserAge(e.target.value)}
-                    placeholder="Ex: 16"
-                    min="10"
-                    max="100"
-                    required
-                    className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white text-gray-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Niveau académique <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={userAcademicLevel}
-                    onChange={(e) => setUserAcademicLevel(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white text-gray-900"
-                  >
-                    <option value="collège">Collège</option>
-                    <option value="lycée">Lycée</option>
-                    <option value="université">Université</option>
-                    <option value="professionnel">Professionnel</option>
-                  </select>
-                </div>
-              </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email (optionnel)
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
-                  placeholder="Ex: jean.dupont@email.com"
-                  className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white text-gray-900"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  placeholder="Entrez votre email"
+                  required
                 />
               </div>
-
-              <button
-                type="submit"
-                className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
-              >
-                Continuer
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* Step 2: Quiz Preferences */}
-        {currentStep === 2 && (
-          <div className="bg-white rounded-2xl shadow-xl border border-primary-200 p-8 md:p-12">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Préférences d'évaluation</h2>
-              <p className="text-gray-600">Choisissez le domaine et le niveau pour personnaliser vos questions</p>
             </div>
+            <button
+              type="submit"
+              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors mt-6"
+            >
+              Suivant
+            </button>
+          </form>
+        </div>
+      </div>
+    )
+  }
 
-            <div className="space-y-6">
+  // Step 2: Subject Selection
+  if (currentStep === 2) {
+    const levelOptions = level === 'lycée'
+      ? [
+          { value: '', label: 'Sélectionner une classe' },
+          { value: 'seconde', label: 'Seconde' },
+          { value: 'premiere', label: 'Première' },
+          { value: 'terminale', label: 'Terminale' }
+        ]
+      : level === 'universite'
+        ? [
+            { value: '', label: 'Sélectionner une année' },
+            { value: 'L1', label: 'Licence 1 (L1)' },
+            { value: 'L2', label: 'Licence 2 (L2)' },
+            { value: 'L3', label: 'Licence 3 (L3)' },
+            { value: 'M1', label: 'Master 1 (M1)' },
+            { value: 'M2', label: 'Master 2 (M2)' }
+          ]
+        : [
+            { value: '', label: 'Sélectionner un niveau' },
+            { value: 'debutant', label: 'Débutant' },
+            { value: 'intermediaire', label: 'Intermédiaire' },
+            { value: 'avance', label: 'Avancé' }
+          ]
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Choisissez votre domaine d'étude</h2>
+          <div className="space-y-4">
+            {level === 'professionnel' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Secteur professionnel <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={sector}
+                  onChange={(e) => setSector(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="informatique_data">Informatique / Data</option>
+                  <option value="business_finance">Business / Finance</option>
+                  <option value="sante">Santé</option>
+                </select>
+              </div>
+            )}
+
+            {level !== 'professionnel' && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Domaine d'étude <span className="text-red-500">*</span>
@@ -1054,211 +765,474 @@ function QuizPage({ onBackToHome }) {
                 <select
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white text-gray-900"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 >
-                  <option value="mathématiques">Mathématiques</option>
+                  <option value="mathematiques">Mathématiques</option>
                   <option value="physique">Physique</option>
                   <option value="chimie">Chimie</option>
-                  <option value="biologie">Biologie</option>
-                  <option value="histoire">Histoire</option>
-                  <option value="géographie">Géographie</option>
-                  <option value="français">Français</option>
-                  <option value="anglais">Anglais</option>
-                  <option value="informatique">Informatique</option>
-                  <option value="philosophie">Philosophie</option>
                 </select>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Niveau de difficulté <span className="text-red-500">*</span>
-                </label>
-                <select
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white text-gray-900"
-                >
-                  <option value="collège">Collège (niveau débutant)</option>
-                  <option value="lycée">Lycée (niveau intermédiaire)</option>
-                  <option value="université">Université (niveau avancé)</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Difficulté <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="easy">Facile</option>
+                <option value="medium">Moyen</option>
+                <option value="hard">Difficile</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Niveau <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={level}
+                onChange={(e) => {
+                  const nextLevel = e.target.value
+                  setLevel(nextLevel)
+                  setClassLevel('')
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="lycée">Lycée</option>
+                <option value="universite">Université</option>
+                <option value="professionnel">Professionnel</option>
+              </select>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Informations complémentaires (optionnel)
-                </label>
-                <textarea
-                  value={userInfo}
-                  onChange={(e) => setUserInfo(e.target.value)}
-                  placeholder="Ex: J'ai de bonnes bases en algèbre, mais je veux m'améliorer en géométrie..."
-                  rows={4}
-                  className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none bg-white text-gray-900"
-                />
-                <p className="text-sm text-gray-500 mt-2">Ces informations nous aident à personnaliser vos questions</p>
-              </div>
-
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setCurrentStep(1)}
-                  className="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-semibold py-4 px-6 rounded-lg border-2 border-gray-300 transition-all duration-200"
-                >
-                  Retour
-                </button>
-                <button
-                  onClick={handlePreferencesSubmit}
-                  className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
-                >
-                  Continuer
-                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </button>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {level === 'lycée' ? 'Classe' : level === 'universite' ? 'Année' : 'Niveau'} <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={classLevel}
+                onChange={(e) => setClassLevel(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                {levelOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
             </div>
           </div>
-        )}
-
-        {/* Step 3: Instructions */}
-        {currentStep === 3 && (
-          <div className="bg-white rounded-2xl shadow-xl border border-primary-200 p-8 md:p-12">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">Instructions importantes</h2>
-              <p className="text-gray-600">Veuillez lire attentivement avant de commencer</p>
-            </div>
-
-            <div className="bg-amber-50 border-l-4 border-amber-500 p-6 rounded-r-lg mb-8">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-lg font-semibold text-amber-900 mb-2">Avertissement</h3>
-                  <p className="text-amber-800">
-                    Une fois le test commencé, vous ne pourrez plus l'arrêter avant la fin. Assurez-vous d'être prêt.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4 mb-8">
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Durée du test</h4>
-                  <p className="text-gray-600">Vous aurez exactement <strong>2 minutes</strong> pour répondre à la question. Un minuteur sera affiché.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Mode plein écran obligatoire</h4>
-                  <p className="text-gray-600">Le test se déroulera en mode plein écran. Si vous quittez ce mode, le test sera automatiquement terminé.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Niveau de confiance</h4>
-                  <p className="text-gray-600">À la fin du quiz, vous indiquerez une seule fois votre niveau de confiance global (0-100%). Cette valeur s'appliquera à l'ensemble de vos réponses.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-4">
-                <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-1">Pas d'interruption</h4>
-                  <p className="text-gray-600">Une fois commencé, vous ne pourrez pas mettre le test en pause ou revenir en arrière.</p>
-                </div>
-              </div>
-
-            </div>
-
-            <div className="bg-primary-50 border border-primary-200 rounded-lg p-6 mb-8">
-              <h4 className="font-semibold text-primary-900 mb-2 flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Conseils
-              </h4>
-              <ul className="space-y-2 text-primary-800">
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Trouvez un endroit calme sans distractions</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Assurez-vous d'avoir une connexion internet stable</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Prenez le temps de bien lire la question</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="mr-2">•</span>
-                  <span>Soyez honnête dans votre niveau de confiance</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setCurrentStep(2)}
-                className="flex-1 bg-white hover:bg-gray-50 text-gray-700 font-semibold py-4 px-6 rounded-lg border-2 border-gray-300 transition-all duration-200"
-              >
-                Retour
-              </button>
-              <button
-                onClick={startTest}
-                className="flex-1 bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Commencer le test
-              </button>
-            </div>
+          <div className="flex space-x-4 mt-6">
+            <button
+              onClick={() => setCurrentStep(1)}
+              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Retour
+            </button>
+            <button
+              onClick={() => {
+                if (!classLevel) {
+                  alert('Veuillez sélectionner votre classe/année/niveau')
+                  return
+                }
+                setCurrentStep(3)
+              }}
+              className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Suivant
+            </button>
           </div>
-        )}
-
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-primary-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <p className="text-center text-sm text-primary-600">
-            © 2026 Projet SIMCO - Système Intelligent Multimodal d'Évaluation Cognitive
-          </p>
         </div>
-      </footer>
-    </div>
-  )
+      </div>
+    )
+  }
+
+  // Step 3: Instructions
+  if (currentStep === 3) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-2xl w-full">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Instructions du Quiz</h2>
+          <div className="space-y-4 text-gray-700">
+            <p>• Vous allez répondre à 20 questions de {subject}</p>
+            <p>• Chaque question a 4 options (A, B, C, D)</p>
+            <p>• Sélectionnez votre réponse et cliquez sur "Soumettre"</p>
+            <p>• Le rapport sera généré automatiquement à la fin</p>
+            <p>• Vous recevrez un email avec vos résultats</p>
+          </div>
+          <div className="flex space-x-4 mt-6">
+            <button
+              onClick={() => setCurrentStep(2)}
+              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Retour
+            </button>
+            <button
+              onClick={generateQuestions}
+              disabled={loading}
+              className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              {loading ? 'Génération en cours...' : 'Commencer le quiz'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Step 4: Loading / Error
+  if (currentStep === 4) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Génération du quiz en cours...</h2>
+          <p className="text-gray-600 mb-6">Veuillez patienter</p>
+
+          {WarningBanner}
+
+          {generationError && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {generationError}
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              onClick={cancelGeneration}
+              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Retour
+            </button>
+            <button
+              onClick={generateQuestions}
+              disabled={loading}
+              className="flex-1 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Step 5: Ready Screen
+  if (currentStep === 5 && showReadyScreen) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Prêt à commencer ?</h2>
+          <p className="text-gray-700 mb-6">
+            Votre quiz de {subject} niveau {level} est prêt.<br />
+            Vous aurez {questions.length || 20} questions à répondre.
+          </p>
+          <button
+            onClick={startQuiz}
+            className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-4 px-6 rounded-xl"
+          >
+            Commencer le quiz
+          </button>
+
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => setCurrentStep(3)}
+              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors"
+            >
+              Retour
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Step 5: Quiz Interface
+  if (currentStep === 5) {
+    return (
+      <div key={`step-${currentStep}`} className="h-screen flex flex-col bg-gray-900">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253" />
+              </svg>
+            </div>
+            <div className="text-white">
+              <div className="text-lg font-semibold">{subject}</div>
+              <div className="text-xs text-primary-100">Question {currentQuestionIndex + 1}/{questions.length}</div>
+              <div className="mt-1 w-40 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-white/80"
+                  style={{ width: `${questions.length ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center space-x-6">
+            <div className="hidden sm:flex items-center space-x-3">
+              <div className="w-28 h-16 bg-black/20 rounded overflow-hidden border border-white/20">
+                <video
+                  ref={setVideoEl}
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="text-white text-xs">
+                <div className="font-semibold">Caméra</div>
+                {cameraError ? (
+                  <div className="text-red-100">{cameraError}</div>
+                ) : (
+                  <div className="text-primary-100">
+                    Visages: {facesCount === null ? '-' : facesCount}
+                    {dominantEmotion ? ` | Émotion: ${dominantEmotion}` : ''}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="text-white text-right">
+              <div className={`text-xl font-bold ${timeRemaining <= 3 ? 'text-red-200' : ''}`}>{formatTime(timeRemaining)}</div>
+              <div className="text-[11px] text-primary-100">Temps restant</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Question */}
+        <div className="flex-1 flex">
+          {/* Left Side - Question */}
+          <div className="flex-1 bg-gray-800 p-8 flex flex-col justify-center">
+            <div className="max-w-3xl">
+              <h1 className="text-3xl font-bold text-white mb-8">{question.question}</h1>
+              <div className="bg-gray-700 rounded-xl p-6">
+                <div className="flex items-center space-x-3 mb-3">
+                  <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="text-yellow-400 font-semibold">Conseil</span>
+                </div>
+                <p className="text-gray-300">Lisez attentivement la question et toutes les options avant de répondre.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Answer Options */}
+          <div className="bg-gray-50 p-8 flex flex-col justify-center">
+            <div className="max-w-2xl">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Choisissez votre réponse</h2>
+              </div>
+
+              <div className="space-y-4 mb-8">
+                {question?.options?.map((option, idx) => {
+                  const displayId = getDisplayOptionId(option, idx)
+                  const optionKey = `${question?.id ?? question?.question ?? 'q'}-${idx}-${String(option?.text ?? '')}`
+                  return (
+                  <button
+                    key={optionKey}
+                    onClick={() => setSelectedOption(displayId)}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                      normalizeOptionId(selectedOption) === displayId
+                        ? 'border-primary-600 bg-primary-50 shadow-lg'
+                        : 'border-gray-300 bg-white hover:border-primary-400'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                        normalizeOptionId(selectedOption) === displayId
+                          ? 'bg-primary-600 text-white'
+                          : 'bg-gray-200 text-gray-600'
+                      }`}>
+                        {displayId}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-lg font-medium ${
+                          normalizeOptionId(selectedOption) === displayId ? 'text-primary-900' : 'text-gray-800'
+                        }`}>
+                          {option.text}
+                        </p>
+                      </div>
+                      {normalizeOptionId(selectedOption) === displayId && (
+                        <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </button>
+                  )
+                })}
+              </div>
+
+              <div className="border rounded-xl p-4 mb-6 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-semibold text-gray-800">Confiance déclarée (question)</div>
+                  <div className="text-sm font-bold text-primary-700">{finalDeclaredConfidence}%</div>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={finalDeclaredConfidence}
+                  onChange={(e) => setFinalDeclaredConfidence(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[11px] text-gray-500 mt-1">
+                  <span>Pas sûr</span>
+                  <span>Très sûr</span>
+                </div>
+              </div>
+
+              <button
+                onClick={submitAnswer}
+                disabled={selectedOption === null || loading}
+                className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center"
+              >
+                {loading ? 'Soumission en cours...' : 'Soumettre la réponse'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Step 6: Global confidence before showing results
+  if (currentStep === 6) {
+    return (
+      <div key={`step-${currentStep}`} className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-3xl w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Avant de terminer</h1>
+            <p className="text-gray-600">Indique ta confiance globale sur ce quiz (0 à 100%).</p>
+          </div>
+
+          <div className="border-t pt-6 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-700">Confiance déclarée (globale)</h3>
+              <span className="text-sm font-bold text-primary-700">{finalDeclaredConfidence}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={finalDeclaredConfidence}
+              onChange={(e) => setFinalDeclaredConfidence(Number(e.target.value))}
+              className="w-full"
+            />
+            <div className="flex justify-between text-[11px] text-gray-500 mt-1">
+              <span>Pas sûr</span>
+              <span>Très sûr</span>
+            </div>
+
+            {cameraError && (
+              <div className="mt-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+                {cameraError}
+              </div>
+            )}
+
+            <button
+              onClick={confirmGlobalConfidence}
+              className="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 px-4 rounded-xl"
+            >
+              Continuer
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Step 7: Results
+  if (currentStep === 7 && results) {
+    const declaredPct = Math.round(((results.declared_confidence ?? 0.5) * 100))
+    const observedPct = Math.round(((results.observed_confidence ?? 0.5) * 100))
+    const dkOn = Boolean(results.bias_flags?.dunning_kruger)
+    const impOn = Boolean(results.bias_flags?.impostor)
+    const hasBiasNotes = Array.isArray(results.bias_notes) && results.bias_notes.length > 0
+
+    return (
+      <div key={`step-${currentStep}`} className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-4xl w-full">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Quiz Terminé !</h1>
+            <div className="flex justify-center space-x-8 mb-6">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary-600">{results.percentage}%</div>
+                <div className="text-gray-600">Score global</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-primary-600">{results.score}</div>
+                <div className="text-gray-600">Points obtenus</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="border rounded-xl p-4 bg-gray-50">
+              <div className="text-sm font-semibold text-gray-700">Confiance déclarée</div>
+              <div className="text-2xl font-bold text-primary-700">{declaredPct}%</div>
+              <div className="text-xs text-gray-600 mt-1">Auto-évaluation (globale)</div>
+            </div>
+            <div className="border rounded-xl p-4 bg-gray-50">
+              <div className="text-sm font-semibold text-gray-700">Confiance observée</div>
+              <div className="text-2xl font-bold text-primary-700">{observedPct}%</div>
+              <div className="text-xs text-gray-600 mt-1">Calculée à partir des émotions</div>
+            </div>
+          </div>
+
+          <div className="border rounded-xl p-4 mb-8">
+            <div className="text-sm font-semibold text-gray-800 mb-3">Biais cognitifs (détection)</div>
+            <div className="flex flex-wrap gap-2">
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${dkOn ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
+                Dunning-Kruger: {dkOn ? 'détecté' : 'non détecté'}
+              </span>
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${impOn ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-gray-100 text-gray-700 border border-gray-200'}`}>
+                Imposteur: {impOn ? 'détecté' : 'non détecté'}
+              </span>
+            </div>
+
+            {hasBiasNotes && (
+              <div className="mt-4 text-sm text-gray-700">
+                <div className="font-semibold mb-2">Notes</div>
+                <ul className="list-disc pl-5 space-y-1">
+                  {results.bias_notes.slice(0, 5).map((n, idx) => (
+                    <li key={`bias-note-${idx}`}>{n}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t pt-6">
+            <button
+              onClick={async () => {
+                downloadReport()
+              }}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center mb-4"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Télécharger le rapport d'évaluation
+            </button>
+            <button
+              onClick={sendEmailReport}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center mb-4"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h10m-7 4h10M7 16h10" />
+              </svg>
+              Envoyer le rapport par email
+            </button>
+            <div className="mt-8" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return null
 }
 
 export default QuizPage

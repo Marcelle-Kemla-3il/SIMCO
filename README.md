@@ -44,7 +44,7 @@ SIMCO (Système Intelligent Multimodal d'Évaluation Cognitive) est une platefor
 
 ```bash
 # Backend
-cd backend
+cd services/quiz_backend
 python -m venv venv
 source venv/bin/activate  # ou venv\Scripts\activate sous Windows
 pip install -r requirements.txt
@@ -56,8 +56,8 @@ npm install
 
 ### Lancer le backend
 ```bash
-cd backend
-uvicorn main:app --reload
+cd ..
+python -m uvicorn services.quiz_backend.main:app --reload
 ```
 
 ### Lancer le frontend
@@ -79,12 +79,17 @@ ollama run mistral
 
 ## Structure du projet
 
+Voir aussi: `docs/PROJECT_STRUCTURE.md` pour la structure à jour.
+
 ```
-backend/
-  main.py
-  requirements.txt
-  Dockerfile
-  ...
+services/
+  quiz_backend/
+    main.py
+    requirements.txt
+    Dockerfile
+    ...
+  face_backend/
+  confidence_backend/
 quiz-frontend/
   src/
     components/
@@ -93,15 +98,35 @@ quiz-frontend/
       ...
   Dockerfile
   ...
+scripts/
+    notification_backend/
+  windows/
+    start-backend.bat
+    start-face-class.bat
+    start-frontend.bat
+    start-simco-logic.bat
+    docker-setup.ps1
+      start-notification.bat
+  unix/
+    docker-setup.sh
+docs/
+  archive/
+artifacts/
+  docker/
 docker-compose.yml
-docker-setup.sh
+start-backend.bat         # wrappers (backward compatibility)
+start-face-class.bat
+start-frontend.bat
+start-simco-logic.bat
+start-notification.bat
+docker-setup.sh           # wrappers (backward compatibility)
 docker-setup.ps1
 ```
 
 ## Données et entraînement ML
-- Les données de session sont stockées dans `backend/data/training/sessions.jsonl`
-- Les modèles entraînés sont dans `backend/data/models/`
-- Scripts d'entraînement dans `backend/ml/`
+- Les données de session sont stockées dans `services/quiz_backend/data/training/sessions.jsonl`
+- Les modèles entraînés sont dans `services/quiz_backend/data/models/`
+- Scripts d'entraînement dans `services/quiz_backend/ml/`
 
 ## Auteurs
 - Guy (MRGUY10)

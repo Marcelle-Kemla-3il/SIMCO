@@ -3,6 +3,7 @@ import QuizInterfacePage from './QuizInterfacePage'
 import WebcamAnalyzer from './WebcamAnalyzer'
 
 const API_BASE_URL = 'http://localhost:8000'
+const FACE_API_BASE_URL = 'http://127.0.0.1:8084'
 
 function QuizPage({ onBackToHome }) {
   // Multi-step state
@@ -60,6 +61,12 @@ function QuizPage({ onBackToHome }) {
   const [showFullscreenWarning, setShowFullscreenWarning] = useState(false)
   const [fullscreenWarningTime, setFullscreenWarningTime] = useState(10)
   const fullscreenWarningTimerRef = useRef(null)
+
+  // Focus warning (real-time face tracking)
+  const [showFocusWarning, setShowFocusWarning] = useState(false)
+  const [focusWarningMessage, setFocusWarningMessage] = useState('')
+  const focusMonitorRef = useRef(null)
+  const lastFocusAlertAtRef = useRef(0)
   
   // Confidence modal (shown after answer submission)
   const [showConfidenceModal, setShowConfidenceModal] = useState(false)
@@ -141,12 +148,51 @@ function QuizPage({ onBackToHome }) {
       clearInterval(timerRef.current)
     }
   }, [testStarted, testEnded, timeRemaining, showFullscreenWarning])
+
+  // Real-time focus monitoring via webcam metrics
+  useEffect(() => {
+    if (!testStarted || testEnded) {
+      if (focusMonitorRef.current) {
+        clearInterval(focusMonitorRef.current)
+        focusMonitorRef.current = null
+      }
+      return
+    }
+
+    focusMonitorRef.current = setInterval(() => {
+      if (!webcamEnabled || !webcamRef.current || !webcamRef.current.getCurrentMetrics) return
+
+      const metrics = webcamRef.current.getCurrentMetrics()
+      const now = Date.now()
+      const focusStatus = metrics.focus_status
+      const noFaceStreak = Number(metrics.consecutive_no_face_checks || 0)
+      const faceRate = Number(metrics.face_detection_rate || 1)
+      const cooldownPassed = now - lastFocusAlertAtRef.current > 15000
+
+      // Trigger warning if user is likely not focused
+      if (cooldownPassed && (focusStatus === 'not_focused' || noFaceStreak >= 2 || faceRate < 0.45)) {
+        lastFocusAlertAtRef.current = now
+        setFocusWarningMessage('Restez concentré sur l\'écran. Nous ne détectons pas votre visage de manière stable.')
+        setShowFocusWarning(true)
+      }
+    }, 3000)
+
+    return () => {
+      if (focusMonitorRef.current) {
+        clearInterval(focusMonitorRef.current)
+        focusMonitorRef.current = null
+      }
+    }
+  }, [testStarted, testEnded, webcamEnabled])
   
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (fullscreenWarningTimerRef.current) {
         clearInterval(fullscreenWarningTimerRef.current)
+      }
+      if (focusMonitorRef.current) {
+        clearInterval(focusMonitorRef.current)
       }
     }
   }, [])
@@ -216,7 +262,9 @@ function QuizPage({ onBackToHome }) {
           body: JSON.stringify({
             subject: subject,
             level: level,
-            user_info: userInfo
+            user_info: userInfo,
+            user_name: userName,
+            user_email: userEmail
           })
         })
         
@@ -310,8 +358,42 @@ function QuizPage({ onBackToHome }) {
       let behavioralData = {}
       if (webcamEnabled && webcamRef.current) {
         const metrics = webcamRef.current.getCurrentMetrics()
+
+        // Send captured frames to face backend and keep only final confidence
+        let faceFinalConfidence = null
+        try {
+          const capturedFrames = metrics.captured_frames || metrics.captured_frames_after_20s || []
+          if (capturedFrames.length > 0) {
+            const formData = new FormData()
+
+            for (let idx = 0; idx < capturedFrames.length; idx++) {
+              const frame = capturedFrames[idx]
+              const dataUrl = frame.image_data_url || `data:image/jpeg;base64,${frame.image_base64}`
+              const blob = await (await fetch(dataUrl)).blob()
+              formData.append('images', blob, `q${currentQuestionIndex + 1}_frame_${idx + 1}.jpg`)
+            }
+
+            const faceResponse = await fetch(`${FACE_API_BASE_URL}/api/classify/frames`, {
+              method: 'POST',
+              body: formData
+            })
+
+            if (faceResponse.ok) {
+              const faceResult = await faceResponse.json()
+              faceFinalConfidence = faceResult?.final?.confidence ?? null
+            } else {
+              const errorText = await faceResponse.text()
+              console.error('Face backend error:', faceResponse.status, errorText)
+            }
+          }
+        } catch (faceError) {
+          console.error('Face backend frame analysis failed:', faceError)
+        }
+
+        // Keep only final confidence for this question (no raw frames sent to backend)
         behavioralData = {
-          ...metrics,
+          face_final_confidence: faceFinalConfidence,
+          captured_frames_count: metrics.captured_frames_count || 0,
           interaction: interactionData || {}
         }
         // Reset metrics for next question
@@ -386,7 +468,7 @@ function QuizPage({ onBackToHome }) {
         },
         body: JSON.stringify({
           session_id: sessionId,
-          confidence: confidence
+          self_confidence: Number((confidence / 100).toFixed(4))
         })
       })
       
@@ -600,59 +682,105 @@ function QuizPage({ onBackToHome }) {
           </div>
         </div>
       )}
+
+      {/* Focus Warning Modal */}
+      {showFocusWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 text-center shadow-2xl">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <svg className="w-8 h-8 sm:w-10 sm:h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Restez concentré</h3>
+            <p className="text-sm sm:text-base text-gray-700 mb-6">{focusWarningMessage}</p>
+            <button
+              onClick={() => setShowFocusWarning(false)}
+              className="bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+            >
+              J'ai compris
+            </button>
+          </div>
+        </div>
+      )}
       
       {/* Confidence Modal - Asked at end of quiz */}
       {showConfidenceModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-lg mx-4 shadow-2xl">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 shadow-2xl">
+            {/* Header */}
             <div className="mb-6 text-center">
-              <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                Quiz terminé !
-              </h3>
-              <p className="text-gray-600">
-                Évaluez votre niveau de confiance global pour ce quiz
-              </p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">Quiz terminé !</h3>
+              <p className="text-gray-500 text-sm">Dernière étape avant vos résultats</p>
             </div>
-            
-            <div className="mb-8">
+
+            {/* Question */}
+            <p className="text-center text-gray-800 font-medium mb-2">
+              Quel était votre niveau de confiance global sur l'ensemble du quiz ?
+            </p>
+            <p className="text-center text-xs text-gray-500 mb-6">
+              Cette valeur unique s'appliquera à chacune de vos {questions.length} réponses.
+            </p>
+
+            {/* Slider */}
+            <div className="mb-6">
               <div className="text-center mb-4">
-                <span className="text-5xl font-bold text-primary-600">{confidence}%</span>
+                <span className="text-6xl font-bold" style={{ color:
+                  confidence >= 70 ? '#16a34a' :
+                  confidence >= 40 ? '#d97706' :
+                  '#dc2626'
+                }}>{confidence}%</span>
+                <p className="text-sm font-medium mt-1" style={{ color:
+                  confidence >= 70 ? '#16a34a' :
+                  confidence >= 40 ? '#d97706' :
+                  '#dc2626'
+                }}>
+                  {confidence >= 70 ? 'Confiant' : confidence >= 40 ? 'Moyennement confiant' : 'Peu confiant'}
+                </p>
               </div>
-              
+
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={confidence}
                 onChange={(e) => setConfidence(Number(e.target.value))}
-                className="w-full h-4 bg-primary-200 rounded-lg appearance-none cursor-pointer mb-4"
+                className="w-full h-4 rounded-lg appearance-none cursor-pointer mb-3"
                 style={{
-                  background: `linear-gradient(to right, #16a34a 0%, #16a34a ${confidence}%, #bbf7d0 ${confidence}%, #bbf7d0 100%)`
+                  background: `linear-gradient(to right, ${
+                    confidence >= 70 ? '#16a34a' : confidence >= 40 ? '#d97706' : '#dc2626'
+                  } 0%, ${
+                    confidence >= 70 ? '#16a34a' : confidence >= 40 ? '#d97706' : '#dc2626'
+                  } ${confidence}%, #e5e7eb ${confidence}%, #e5e7eb 100%)`
                 }}
               />
-              
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Pas confiant du tout</span>
-                <span>Très confiant</span>
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>0% — Pas du tout</span>
+                <span>50%</span>
+                <span>100% — Totalement</span>
               </div>
             </div>
-            
-            <div className="bg-primary-50 rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-700 text-center">
-                Évaluez votre niveau de confiance global concernant l'ensemble de vos réponses.
+
+            {/* Applied-to-all notice */}
+            <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+              <svg className="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-blue-800">
+                La valeur <strong>{confidence}%</strong> sera attribuée à l'ensemble de vos <strong>{questions.length} questions</strong> pour l'analyse Dunning-Kruger.
               </p>
             </div>
-            
+
             <button
               onClick={submitAnswerWithConfidence}
               className="w-full bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200"
             >
-              Voir mes résultats
+              Voir mes résultats →
             </button>
           </div>
         </div>
@@ -663,355 +791,412 @@ function QuizPage({ onBackToHome }) {
 
   // Results Page
   if (showResults && results) {
+    const scoreEmoji = results.percentage >= 80 ? '🏆' : results.percentage >= 60 ? '🎯' : results.percentage >= 40 ? '💪' : '📚'
+    const scoreBg = results.percentage >= 80 ? 'from-green-400 to-green-600' : results.percentage >= 60 ? 'from-blue-400 to-blue-600' : results.percentage >= 40 ? 'from-yellow-400 to-yellow-600' : 'from-red-400 to-red-600'
+    const scoreMsg = results.percentage >= 80 ? 'Excellent ! Tu maîtrises très bien ce sujet !' : results.percentage >= 60 ? 'Bien joué ! Continue comme ça !' : results.percentage >= 40 ? 'Pas mal ! Encore un peu de travail !' : 'Continue d\'apprendre, tu vas y arriver !'
+    const dk = results.dunning_kruger
+    const neuralConfidence = Number(results.true_confidence?.true_confidence)
+    const trueConfidenceNormalized = Number(results.true_confidence?.true_confidence_normalized)
+    const competencePercent = dk && Number.isFinite(Number(dk.actual_score))
+      ? Math.max(0, Math.min(100, Math.round(Number(dk.actual_score))))
+      : Math.max(0, Math.min(100, Math.round(Number(results.percentage || 0))))
+    const trueConfidencePercent = Number.isFinite(trueConfidenceNormalized)
+      ? Math.max(0, Math.min(100, Math.round(trueConfidenceNormalized * 100)))
+      : (Number.isFinite(neuralConfidence)
+          ? Math.max(0, Math.min(100, Math.round(neuralConfidence)))
+          : null)
+    const confidenceGap = trueConfidencePercent === null ? null : (trueConfidencePercent - competencePercent)
+    const profile = confidenceGap === null
+      ? 'unknown'
+      : confidenceGap > 12
+        ? 'overconfident'
+        : confidenceGap < -12
+          ? 'underconfident'
+          : 'accurate'
+    const profileLabel = profile === 'overconfident'
+      ? 'Surconfiant'
+      : profile === 'underconfident'
+        ? 'Sous-confiant'
+        : profile === 'accurate'
+          ? 'Bien calibré'
+          : 'À confirmer'
+    const profileStyle = profile === 'overconfident'
+      ? {
+          dot: '#ef4444',
+          guide: '#ef4444',
+          badge: 'bg-red-100 text-red-800',
+          gap: 'text-red-700'
+        }
+      : profile === 'underconfident'
+        ? {
+            dot: '#f59e0b',
+            guide: '#f59e0b',
+            badge: 'bg-amber-100 text-amber-800',
+            gap: 'text-amber-700'
+          }
+        : profile === 'accurate'
+          ? {
+              dot: '#22c55e',
+              guide: '#22c55e',
+              badge: 'bg-green-100 text-green-800',
+              gap: 'text-green-700'
+            }
+          : {
+              dot: '#8b5cf6',
+              guide: '#8b5cf6',
+              badge: 'bg-indigo-100 text-indigo-800',
+              gap: 'text-indigo-700'
+            }
+
+    const chartWidth = 640
+    const chartHeight = 300
+    const paddingX = 56
+    const paddingY = 34
+    const plotWidth = chartWidth - paddingX * 2
+    const plotHeight = chartHeight - paddingY * 2
+    const mapX = (value) => paddingX + (Math.max(0, Math.min(100, value)) / 100) * plotWidth
+    const mapY = (value) => paddingY + ((100 - Math.max(0, Math.min(100, value))) / 100) * plotHeight
+    const userX = mapX(competencePercent)
+    const userY = mapY(trueConfidencePercent ?? competencePercent)
+    const baselineStartX = mapX(0)
+    const baselineStartY = mapY(0)
+    const baselineEndX = mapX(100)
+    const baselineEndY = mapY(100)
+    const baselineControlX = mapX(50)
+    const baselineControlY = mapY(58)
+    const curvePath = `M ${baselineStartX},${baselineStartY} Q ${baselineControlX},${baselineControlY} ${baselineEndX},${baselineEndY}`
+    const pointPosition = confidenceGap === null
+      ? 'indéterminée'
+      : confidenceGap > 12
+        ? 'au-dessus de la courbe'
+        : confidenceGap < -12
+          ? 'en dessous de la courbe'
+          : 'proche de la courbe'
+    const gapText = confidenceGap === null
+      ? 'Écart: non disponible'
+      : `Écart: ${confidenceGap > 0 ? '+' : ''}${Math.round(confidenceGap)} points (confiance - compétence)`
+    const profileSummary = profile === 'overconfident'
+      ? 'Tu as plus confiance que ton score actuel.'
+      : profile === 'underconfident'
+        ? 'Ton score est meilleur que ce que tu penses.'
+        : profile === 'accurate'
+          ? 'Ta confiance est proche de ton score.'
+          : 'On a besoin de plus de données pour te situer.'
+    const mainAction = profile === 'overconfident'
+      ? 'Action: relis chaque réponse 20 secondes avant de valider.'
+      : profile === 'underconfident'
+        ? 'Action: garde ton premier raisonnement quand il est structuré.'
+        : profile === 'accurate'
+          ? 'Action: continue la même méthode, puis augmente la difficulté.'
+          : 'Action: refais un quiz pour obtenir une position plus fiable.'
+
+    const personalizedTips = [mainAction]
+
+    if (profile === 'overconfident') {
+      personalizedTips.push('Règle 2-passages: fais un premier choix, puis vérifie une deuxième fois avant validation.')
+      personalizedTips.push('Avant de répondre, élimine au moins 2 options incorrectes.')
+      personalizedTips.push('Quand tu es très sûr (>70%), cherche volontairement une preuve contraire pendant 10 secondes.')
+    } else if (profile === 'underconfident') {
+      personalizedTips.push('Ne change pas ta première réponse sauf si tu trouves une erreur précise dans ton raisonnement.')
+      personalizedTips.push('Après chaque bonne réponse, note rapidement pourquoi elle était correcte pour renforcer ta confiance.')
+      personalizedTips.push('Fais des séries courtes (5 questions) pour stabiliser ta confiance avant les séries longues.')
+    } else if (profile === 'accurate') {
+      personalizedTips.push('Garde le même processus de réponse: lecture, raisonnement, vérification rapide.')
+      personalizedTips.push('Ajoute progressivement des questions plus difficiles pour continuer à progresser.')
+      personalizedTips.push('Chronomètre-toi pour gagner en vitesse sans perdre en précision.')
+    } else {
+      personalizedTips.push('Refais un quiz dans les mêmes conditions pour obtenir un profil plus fiable.')
+      personalizedTips.push('Concentre-toi sur une méthode simple: lire, éliminer, vérifier, répondre.')
+    }
+
+    if (results.percentage < 50) {
+      personalizedTips.push('Plan 7 jours: 20 min/jour sur les bases du chapitre avec correction immédiate.')
+      personalizedTips.push('Après le quiz, revois en priorité les 3 questions les plus difficiles.')
+    } else if (results.percentage < 80) {
+      personalizedTips.push('Travaille les erreurs récurrentes: repère le type de question qui revient le plus souvent.')
+      personalizedTips.push('Fais 1 mini-session quotidienne (10 questions) sur ce type de question précis.')
+    } else {
+      personalizedTips.push('Passe à des exercices avancés pour maintenir ta progression.')
+      personalizedTips.push('Aide un camarade sur ce sujet: expliquer consolide fortement les acquis.')
+    }
+
+    personalizedTips.push('Tiens un journal d\'erreurs: question, erreur, bonne méthode, règle à retenir.')
+
+    const confidenceSamples = (results.question_results || [])
+      .map((q) => Number(q.face_confidence))
+      .filter((v) => Number.isFinite(v) && v >= 0 && v <= 100)
+
+    const histogramBins = [
+      { label: '0-20', min: 0, max: 20, count: 0 },
+      { label: '21-40', min: 21, max: 40, count: 0 },
+      { label: '41-60', min: 41, max: 60, count: 0 },
+      { label: '61-80', min: 61, max: 80, count: 0 },
+      { label: '81-100', min: 81, max: 100, count: 0 }
+    ]
+
+    confidenceSamples.forEach((value) => {
+      const bucket = histogramBins.find((b) => value >= b.min && value <= b.max)
+      if (bucket) bucket.count += 1
+    })
+
+    const histogramMax = Math.max(1, ...histogramBins.map((b) => b.count))
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary-50">
+      <div className="min-h-screen bg-gradient-to-br from-slate-100 to-blue-50">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-primary-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center space-x-3 sm:space-x-4">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center">
-                  <svg className="w-6 h-6 sm:w-7 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-lg sm:text-2xl font-bold text-primary-800">Résultats du Quiz</h1>
-                  <p className="text-xs sm:text-sm text-primary-600">SIMCO - Évaluation Cognitive</p>
-                </div>
-              </div>
-              <button
-                onClick={onBackToHome}
-                className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 sm:px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-sm sm:text-base"
-              >
-                Retour à l'accueil
-              </button>
-            </div>
+        <header className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
+            <h1 className="text-lg font-bold text-gray-800">📋 Tes Résultats</h1>
+            <button onClick={onBackToHome} className="bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-all">
+              ← Retour
+            </button>
           </div>
         </header>
 
-        <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
-          {/* Score Card */}
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-primary-200 p-4 sm:p-8 mb-6 sm:mb-8">
-            <div className="text-center mb-6 sm:mb-8">
-              <div className={`w-24 h-24 sm:w-32 sm:h-32 mx-auto rounded-full flex items-center justify-center mb-4 sm:mb-6 ${
-                results.color === 'success' ? 'bg-green-100' :
-                results.color === 'good' ? 'bg-blue-100' :
-                results.color === 'average' ? 'bg-yellow-100' :
-                'bg-red-100'
-              }`}>
-                <div className="text-center">
-                  <div className={`text-4xl sm:text-5xl font-bold ${
-                    results.color === 'success' ? 'text-green-600' :
-                    results.color === 'good' ? 'text-blue-600' :
-                    results.color === 'average' ? 'text-yellow-600' :
-                    'text-red-600'
-                  }`}>
-                    {results.percentage}%
-                  </div>
-                </div>
-              </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 px-2">{results.level}</h2>
-              <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-4 sm:mb-6 px-4">{results.message}</p>
-              <div className="inline-flex items-center space-x-4 sm:space-x-8 bg-gray-50 px-4 sm:px-8 py-3 sm:py-4 rounded-xl flex-wrap justify-center">
-                <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-primary-600">{results.score}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">Correctes</div>
-                </div>
-                <div className="w-px h-8 sm:h-12 bg-gray-300"></div>
-                <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-gray-400">{results.total_questions - results.score}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">Incorrectes</div>
-                </div>
-                <div className="w-px h-8 sm:h-12 bg-gray-300"></div>
-                <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-bold text-gray-700">{results.total_questions}</div>
-                  <div className="text-xs sm:text-sm text-gray-500">Total</div>
-                </div>
-              </div>
-            </div>
+        <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
-            {/* Performance Analysis */}
-            <div className="border-t border-gray-200 pt-6 sm:pt-8">
-              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4 flex items-center">
-                <svg className="w-6 h-6 sm:w-7 sm:h-7 mr-2 sm:mr-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                Analyse de Performance
-              </h3>
-              <div className="bg-gradient-to-br from-primary-50 to-white p-6 rounded-xl border border-primary-100">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                      <span className={`w-3 h-3 rounded-full mr-2 ${
-                        results.color === 'success' ? 'bg-green-500' :
-                        results.color === 'good' ? 'bg-blue-500' :
-                        results.color === 'average' ? 'bg-yellow-500' :
-                        'bg-red-500'
-                      }`}></span>
-                      Points Forts
-                    </h4>
-                    <ul className="space-y-2 text-gray-700">
-                      {results.score >= results.total_questions * 0.7 && (
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Bonne maîtrise du sujet
-                        </li>
-                      )}
-                      {results.answered_count === results.total_questions && (
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Quiz complété intégralement
-                        </li>
-                      )}
-                      {results.score > 0 && (
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Capacité à répondre correctement
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-800 mb-3 flex items-center">
-                      <span className="w-3 h-3 rounded-full bg-amber-500 mr-2"></span>
-                      Axes d'Amélioration
-                    </h4>
-                    <ul className="space-y-2 text-gray-700">
-                      {results.score < results.total_questions * 0.5 && (
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-amber-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                          Renforcer les bases fondamentales
-                        </li>
-                      )}
-                      {results.score < results.total_questions && (
-                        <li className="flex items-start">
-                          <svg className="w-5 h-5 text-amber-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                          </svg>
-                          Réviser les questions manquées
-                        </li>
-                      )}
-                      <li className="flex items-start">
-                        <svg className="w-5 h-5 text-amber-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Pratiquer régulièrement
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Recommendations */}
-          <div className="bg-white rounded-2xl shadow-xl border border-primary-200 p-4 sm:p-6 md:p-8 mb-6 sm:mb-8">
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 mr-2 sm:mr-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-              Recommandations
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {results.recommendations.map((rec, idx) => (
-                <div key={idx} className="flex items-start p-4 bg-primary-50 rounded-lg border border-primary-100">
-                  <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0 mr-3">
-                    <span className="text-white font-bold">{idx + 1}</span>
-                  </div>
-                  <p className="text-gray-700 leading-relaxed">{rec}</p>
+          {/* ── 1. BIG SCORE CARD ── */}
+          <div className={`bg-gradient-to-br ${scoreBg} rounded-3xl p-8 text-white text-center shadow-2xl`}>
+            <div className="text-8xl mb-4">{scoreEmoji}</div>
+            <div className="text-7xl font-black mb-2">{results.percentage}%</div>
+            <p className="text-2xl font-bold mb-4">{scoreMsg}</p>
+            {/* Dots: one per question */}
+            <div className="flex justify-center flex-wrap gap-3 mb-4">
+              {results.question_results.map((qr, idx) => (
+                <div key={idx} className={`w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold shadow-md border-2 border-white/40 ${
+                  qr.user_answer === null || qr.user_answer === undefined ? 'bg-white/20' :
+                  qr.is_correct ? 'bg-white text-green-600' : 'bg-white/20'
+                }`} title={`Question ${idx + 1}`}>
+                  {qr.user_answer === null || qr.user_answer === undefined ? '–' : qr.is_correct ? '✓' : '✗'}
                 </div>
               ))}
             </div>
+            <p className="text-white/80 text-lg">
+              <strong>{results.score}</strong> bonne{results.score > 1 ? 's' : ''} réponse{results.score > 1 ? 's' : ''} sur <strong>{results.total_questions}</strong> questions
+            </p>
           </div>
 
-          {/* Behavioral Analysis */}
-          {results.behavioral_analysis && (
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-xl border-2 border-purple-200 p-8 mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <svg className="w-7 h-7 mr-3 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                Analyse Comportementale
-                <span className="ml-3 px-3 py-1 bg-purple-600 text-white text-xs font-semibold rounded-full">SIMCO AI</span>
-              </h3>
-              
-              {/* Metrics Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div className="bg-white rounded-xl p-3 sm:p-4 border border-purple-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs sm:text-sm font-medium text-gray-600">Niveau de Stress</span>
-                    <div className={`w-3 h-3 rounded-full ${
-                      results.behavioral_analysis.overall_stress_level === 'low' ? 'bg-green-500' :
-                      results.behavioral_analysis.overall_stress_level === 'medium' ? 'bg-yellow-500' :
-                      'bg-red-500'
-                    }`}></div>
-                  </div>
-                  <p className="text-xl sm:text-xl sm:text-2xl font-bold text-gray-900 capitalize">{
-                    results.behavioral_analysis.overall_stress_level === 'low' ? 'Faible' :
-                    results.behavioral_analysis.overall_stress_level === 'medium' ? 'Modéré' :
-                    'Élevé'
-                  }</p>
-                  <p className="text-xs text-gray-500 mt-1">{results.behavioral_analysis.avg_blink_rate.toFixed(1)} clignements/min</p>
+          {/* ── 2. VISUAL SCORE BAR ── */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">📊 Ton score en images</h2>
+            <div className="flex gap-1 rounded-xl overflow-hidden h-10 mb-3">
+              {results.question_results.map((qr, idx) => (
+                <div key={idx} className={`flex-1 flex items-center justify-center text-white text-xs font-bold ${
+                  qr.user_answer === null || qr.user_answer === undefined ? 'bg-gray-300' :
+                  qr.is_correct ? 'bg-green-500' : 'bg-red-400'
+                }`}>
+                  {idx + 1}
                 </div>
-                
-                <div className="bg-white rounded-xl p-3 sm:p-4 border border-purple-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs sm:text-sm font-medium text-gray-600">Stabilité du Regard</span>
-                    <div className={`w-3 h-3 rounded-full ${
-                      results.behavioral_analysis.avg_gaze_stability > 0.8 ? 'bg-green-500' :
-                      results.behavioral_analysis.avg_gaze_stability > 0.6 ? 'bg-yellow-500' :
-                      'bg-red-500'
-                    }`}></div>
-                  </div>
-                  <p className="text-xl sm:text-2xl font-bold text-gray-900">{(results.behavioral_analysis.avg_gaze_stability * 100).toFixed(0)}%</p>
-                  <p className="text-xs text-gray-500 mt-1">Concentration</p>
-                </div>
-                
-                <div className="bg-white rounded-xl p-3 sm:p-4 border border-purple-200 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs sm:text-sm font-medium text-gray-600">Calibration Confiance</span>
-                    <div className={`w-3 h-3 rounded-full ${
-                      results.behavioral_analysis.confidence_calibration === 'well_calibrated' ? 'bg-green-500' :
-                      results.behavioral_analysis.confidence_calibration === 'underconfident' ? 'bg-yellow-500' :
-                      'bg-orange-500'
-                    }`}></div>
-                  </div>
-                  <p className="text-base sm:text-lg font-bold text-gray-900 capitalize">{
-                    results.behavioral_analysis.confidence_calibration === 'well_calibrated' ? 'Bonne' :
-                    results.behavioral_analysis.confidence_calibration === 'underconfident' ? 'Sous-confiance' :
-                    'Surconfiance'
-                  }</p>
-                  <p className="text-xs text-gray-500 mt-1">Auto-évaluation</p>
-                </div>
-              </div>
-              
-              {/* Behavioral Insights */}
-              {results.behavioral_insights && results.behavioral_insights.length > 0 && (
-                <div className="bg-white rounded-xl p-4 sm:p-6 border border-purple-200">
-                  <h4 className="text-sm sm:text-base font-semibold text-gray-800 mb-3 sm:mb-4 flex items-center">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Observations Comportementales
-                  </h4>
-                  <div className="space-y-2 sm:space-y-3">
-                    {results.behavioral_insights.map((insight, idx) => (
-                      <div key={idx} className="flex items-start p-2 sm:p-3 bg-purple-50 rounded-lg">
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600 mr-2 sm:mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        <p className="text-gray-700 text-xs sm:text-sm">{insight}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              ))}
+            </div>
+            <div className="flex gap-4 text-sm">
+              <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-green-500 inline-block"></span> Bonne réponse ({results.score})</span>
+              <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-red-400 inline-block"></span> Mauvaise réponse ({results.total_questions - results.score - (results.total_questions - results.answered_count)})</span>
+              {results.total_questions - results.answered_count > 0 && (
+                <span className="flex items-center gap-1"><span className="w-4 h-4 rounded bg-gray-300 inline-block"></span> Non répondu ({results.total_questions - results.answered_count})</span>
               )}
-              
-              <div className="mt-6 p-4 bg-white/50 rounded-lg border border-purple-200">
-                <p className="text-xs text-gray-600 flex items-center">
-                  <svg className="w-4 h-4 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  L'analyse comportementale utilise la reconnaissance faciale pour évaluer votre niveau d'engagement, de stress et de confiance pendant le quiz.
-                </p>
+            </div>
+          </div>
+
+          {/* ── 3. CONFIDENCE VS SCORE ── */}
+          {dk && (
+            <div className="bg-white rounded-3xl p-6 shadow-lg">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">🧠 Est-ce que tu te connaissais bien ?</h2>
+              <p className="text-gray-500 text-sm mb-6">On compare ta compétence (score total) avec ta confiance estimée.</p>
+
+              {/* Competence vs true confidence chart */}
+              <div className="mb-6 rounded-2xl border border-gray-200 bg-gradient-to-b from-gray-50 to-white p-4">
+                <p className="text-sm font-semibold text-gray-700 mb-3">Courbe et position</p>
+                <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-52" role="img" aria-label="Courbe de position compétence confiance">
+                  {[0, 25, 50, 75, 100].map((tick) => {
+                    const y = mapY(tick)
+                    const x = mapX(tick)
+                    return (
+                      <g key={tick}>
+                        <line x1={paddingX} y1={y} x2={chartWidth - paddingX} y2={y} stroke="#e5e7eb" strokeDasharray="4 4" />
+                        <line x1={x} y1={paddingY} x2={x} y2={chartHeight - paddingY} stroke="#f1f5f9" />
+                        <text x={paddingX - 10} y={y + 4} textAnchor="end" fontSize="10" fill="#6b7280">{tick}</text>
+                        <text x={x} y={chartHeight - paddingY + 14} textAnchor="middle" fontSize="10" fill="#6b7280">{tick}</text>
+                      </g>
+                    )
+                  })}
+
+                  <line x1={paddingX} y1={chartHeight - paddingY} x2={chartWidth - paddingX} y2={chartHeight - paddingY} stroke="#334155" strokeWidth="1.5" />
+                  <line x1={paddingX} y1={chartHeight - paddingY} x2={paddingX} y2={paddingY} stroke="#334155" strokeWidth="1.5" />
+
+                  <path d={curvePath} fill="none" stroke="#0f172a" strokeWidth="2.5" strokeDasharray="6 4" />
+
+                  <line x1={userX} y1={chartHeight - paddingY} x2={userX} y2={userY} stroke={profileStyle.guide} strokeDasharray="4 3" />
+                  <line x1={paddingX} y1={userY} x2={userX} y2={userY} stroke={profileStyle.guide} strokeDasharray="4 3" />
+
+                  <circle cx={userX} cy={userY} r="7" fill={profileStyle.dot} />
+                  <text x={userX} y={userY - 12} textAnchor="middle" fontSize="11" fontWeight="700" fill={profileStyle.dot}>
+                    Toi
+                  </text>
+
+                  <text x={chartWidth / 2} y={chartHeight - 4} textAnchor="middle" fontSize="11" fill="#334155">
+                    Compétence (score total %)
+                  </text>
+                  <text x={14} y={chartHeight / 2} textAnchor="middle" fontSize="11" fill="#334155" transform={`rotate(-90 14 ${chartHeight / 2})`}>
+                    Confiance estimée (%)
+                  </text>
+
+                  <text x={baselineEndX - 6} y={baselineEndY - 10} textAnchor="end" fontSize="10" fill="#0f172a">
+                    Courbe d'équilibre
+                  </text>
+                </svg>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${profileStyle.badge}`}>
+                    Profil: {profileLabel}
+                  </span>
+                  <span className="text-sm text-gray-700">
+                    Compétence: <strong>{competencePercent}%</strong>
+                  </span>
+                  {trueConfidencePercent !== null && (
+                    <span className="text-sm text-gray-700">
+                      Confiance estimée: <strong>{trueConfidencePercent}%</strong>
+                    </span>
+                  )}
+                  {trueConfidencePercent !== null && (
+                    <span className="text-sm text-gray-700">
+                      Position: <strong>{pointPosition}</strong>
+                    </span>
+                  )}
+                  {trueConfidencePercent !== null && (
+                    <span className={`text-sm font-semibold ${profileStyle.gap}`}>
+                      {gapText}
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 rounded-xl bg-white border border-gray-200 px-3 py-2">
+                  <p className="text-sm text-gray-800 font-medium">{profileSummary}</p>
+                  <p className="text-sm text-gray-700">{mainAction}</p>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Detailed Results */}
-          <div className="bg-white rounded-2xl shadow-xl border border-primary-200 p-4 sm:p-6 md:p-8">
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
-              <svg className="w-6 h-6 sm:w-7 sm:h-7 mr-2 sm:mr-3 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
-              Détails des Questions
-            </h3>
-            <div className="space-y-4">
-              {results.question_results.map((qr, idx) => {
-                const wasAnswered = qr.user_answer !== null && qr.user_answer !== undefined
-                const cardColor = !wasAnswered ? 'border-gray-300 bg-gray-50' : 
-                                qr.is_correct ? 'border-green-200 bg-green-50' : 
-                                'border-red-200 bg-red-50'
-                const iconColor = !wasAnswered ? 'bg-gray-400' :
-                                qr.is_correct ? 'bg-green-500' : 'bg-red-500'
-                
-                return (
-                  <div key={idx} className={`border-2 rounded-xl p-6 ${cardColor}`}>
-                    <div className="flex items-start justify-between mb-4">
-                      <h4 className="font-semibold text-gray-900 flex-1 pr-4">
-                        <span className="text-primary-600">Question {idx + 1}:</span> {qr.question}
-                      </h4>
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${iconColor}`}>
-                        {!wasAnswered ? (
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                          </svg>
-                        ) : qr.is_correct ? (
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        )}
+          {/* ── 4. CONFIDENCE HISTOGRAM ── */}
+          {confidenceSamples.length > 0 && (
+            <div className="bg-white rounded-3xl p-6 shadow-lg">
+              <h2 className="text-xl font-bold text-gray-800 mb-2">📊 Histogramme des valeurs de confiance</h2>
+              <p className="text-gray-500 text-sm mb-5">Répartition des confiances estimées par question.</p>
+
+              <div className="grid grid-cols-5 gap-3 items-end h-52">
+                {histogramBins.map((bin) => {
+                  const barHeight = `${(bin.count / histogramMax) * 100}%`
+                  return (
+                    <div key={bin.label} className="flex flex-col items-center h-full">
+                      <div className="text-xs font-semibold text-gray-700 mb-2">{bin.count}</div>
+                      <div className="w-full max-w-[44px] bg-gray-100 rounded-t-lg flex items-end h-full border border-gray-200">
+                        <div
+                          className="w-full bg-gradient-to-t from-purple-500 to-indigo-400 rounded-t-lg transition-all duration-300"
+                          style={{ height: barHeight }}
+                          title={`${bin.label}: ${bin.count}`}
+                        ></div>
                       </div>
+                      <div className="text-[11px] text-gray-600 mt-2 text-center">{bin.label}</div>
                     </div>
-                  <div className="space-y-2 mb-4">
-                    {qr.options.map((opt, optIdx) => {
-                      const letter = String.fromCharCode(65 + optIdx)
-                      const isCorrect = optIdx === qr.correct_answer
-                      const isSelected = qr.user_answer !== null && qr.user_answer !== undefined && optIdx === qr.user_answer
-                      const wasNotAnswered = qr.user_answer === null || qr.user_answer === undefined
-                      
-                      return (
-                        <div key={optIdx} className={`p-3 rounded-lg ${
-                          isCorrect ? 'bg-green-100 border-2 border-green-400' :
-                          isSelected && !isCorrect ? 'bg-red-100 border-2 border-red-400' :
-                          'bg-white border border-gray-200'
-                        }`}>
-                          <span className="font-semibold">{letter})</span> {opt}
-                          {isCorrect && (
-                            <span className="ml-2 text-green-600 font-semibold">✓ Bonne réponse</span>
-                          )}
-                          {isSelected && !isCorrect && (
-                            <span className="ml-2 text-red-600 font-semibold">✗ Votre réponse</span>
-                          )}
-                        </div>
-                      )
-                    })}
-                    {(qr.user_answer === null || qr.user_answer === undefined) && (
-                      <p className="text-sm text-gray-500 italic mt-2">Vous n'avez pas répondu à cette question</p>
-                    )}
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── 5. TIPS ── */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">💡 Ton plan d'action</h2>
+            <div className="space-y-3">
+              {personalizedTips.map((rec, idx) => {
+                const tipEmojis = ['🚀', '📖', '✏️', '🧩', '🏅']
+                return (
+                  <div key={idx} className="flex items-center gap-3 bg-primary-50 rounded-2xl px-4 py-3 border border-primary-100">
+                    <span className="text-2xl">{tipEmojis[idx % tipEmojis.length]}</span>
+                    <p className="text-gray-700 font-medium">{rec}</p>
                   </div>
-                  <div className="bg-white border-l-4 border-primary-500 p-3 sm:p-4 rounded">
-                    <p className="text-xs sm:text-sm font-semibold text-gray-700 mb-1">💡 Explication:</p>
-                    <p className="text-xs sm:text-base text-gray-600">{qr.explanation}</p>
-                  </div>
-                </div>
-              )})}
+                )
+              })}
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="mt-6 sm:mt-8 flex justify-center px-4">
+          {/* ── 6. QUESTION REVIEW ── */}
+          <div className="bg-white rounded-3xl p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-gray-800 mb-5">🔍 Revoir les questions</h2>
+            <div className="space-y-4">
+              {results.question_results.map((qr, idx) => {
+                const wasAnswered = qr.user_answer !== null && qr.user_answer !== undefined
+                const correct = wasAnswered && qr.is_correct
+                const wrong = wasAnswered && !qr.is_correct
+                return (
+                  <div key={idx} className={`rounded-2xl border-2 p-5 ${
+                    !wasAnswered ? 'border-gray-200 bg-gray-50' :
+                    correct ? 'border-green-300 bg-green-50' :
+                    'border-red-200 bg-red-50'
+                  }`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="text-3xl">{!wasAnswered ? '⬜' : correct ? '✅' : '❌'}</span>
+                      <div>
+                        <span className="text-xs font-bold uppercase tracking-wide text-gray-400">Question {idx + 1}</span>
+                        <p className="font-semibold text-gray-900 text-sm sm:text-base">{qr.question}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                      {qr.options.map((opt, optIdx) => {
+                        const isCorrect = optIdx === qr.correct_answer
+                        const isSelected = wasAnswered && optIdx === qr.user_answer
+                        return (
+                          <div key={optIdx} className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${
+                            isCorrect ? 'bg-green-200 border border-green-400 font-semibold text-green-900' :
+                            isSelected && !isCorrect ? 'bg-red-200 border border-red-400 text-red-800' :
+                            'bg-white border border-gray-200 text-gray-700'
+                          }`}>
+                            <span className="font-bold text-gray-400">{String.fromCharCode(65 + optIdx)})</span>
+                            <span>{opt}</span>
+                            {isCorrect && <span className="ml-auto">✅</span>}
+                            {isSelected && !isCorrect && <span className="ml-auto">❌</span>}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {!wasAnswered && <p className="text-sm text-gray-400 italic">Tu n'as pas répondu à cette question.</p>}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                      <div className="bg-white rounded-xl px-4 py-3 border border-purple-200">
+                        <p className="text-xs font-bold text-purple-700 mb-1">🤖 Confiance estimée (visage)</p>
+                        <p className="text-sm text-gray-700">
+                          {Number.isFinite(Number(qr.face_confidence)) ? `${Math.round(Number(qr.face_confidence))}%` : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50 rounded-xl px-4 py-3 border-l-4 border-amber-400 mb-3">
+                      <p className="text-xs font-bold text-amber-700 mb-1">🧭 Analyse de cette question</p>
+                      <p className="text-sm text-gray-700">{qr.confidence_analysis || 'Analyse non disponible pour cette question.'}</p>
+                    </div>
+
+                    <div className="bg-white rounded-xl px-4 py-3 border-l-4 border-primary-400">
+                      <p className="text-xs font-bold text-primary-700 mb-1">💡 Explication</p>
+                      <p className="text-sm text-gray-600">{qr.explanation}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ── 7. BACK BUTTON ── */}
+          <div className="flex justify-center pb-8">
             <button
               onClick={onBackToHome}
-              className="w-full sm:w-auto bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-semibold py-3 sm:py-4 px-6 sm:px-8 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-sm sm:text-base"
+              className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white font-bold py-4 px-10 rounded-2xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 text-lg"
             >
-              Retour à l'accueil
+              🏠 Retour à l'accueil
             </button>
           </div>
+
         </main>
       </div>
     )
@@ -1154,13 +1339,14 @@ function QuizPage({ onBackToHome }) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email (optionnel)
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
                   placeholder="Ex: jean.dupont@email.com"
+                  required
                   className="w-full px-4 py-3 border border-primary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all bg-white text-gray-900"
                 />
               </div>
@@ -1326,7 +1512,7 @@ function QuizPage({ onBackToHome }) {
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-1">Niveau de confiance</h4>
-                  <p className="text-gray-600">Après avoir répondu, vous devrez indiquer votre niveau de confiance dans votre réponse (0-100%).</p>
+                  <p className="text-gray-600">À la fin du quiz, vous indiquerez une seule fois votre niveau de confiance global (0-100%). Cette valeur s'appliquera à l'ensemble de vos réponses.</p>
                 </div>
               </div>
 

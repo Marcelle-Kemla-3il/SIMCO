@@ -1,0 +1,322 @@
+{
+  "session_id": "aaafb7a0-99d2-4922-beed-a17c3f32af21",
+  "updated_at": "2026-03-19T14:44:38.217715Z",
+  "session_data": {
+    "questions": [
+      {
+        "id": "0b02637e-a773-40bc-b08c-48f30cac339e",
+        "question": "Soit un triangle rectangle ayant pour hypoténuse le segment [0, 15] et pour angle droit l'angle de droite à l'origine. Quelle est la longueur du côté opposé au haut de l'angle droit ?",
+        "options": [
+          "a = 3, b = 6 (Réponse correcte : A)",
+          "x² + x",
+          "2x²",
+          "x² - x"
+        ],
+        "correct_answer": 0,
+        "explanation": "Dans un triangle rectangle, la longueur du côté opposé à l'angle droit est égale au produit de la longueur de l'hypoténuse par le cosinus de l'angle droit. Le cosinus d'un angle droit est √2/2, donc la longueur du côté opposé au haut de l'angle droit est 15 * (√2/2) + 15 = 3√2 + 12."
+      },
+      {
+        "id": "c0ca7d6d-6c2a-474a-bc3c-661043c79485",
+        "question": "Quel est le produit des nombres suivants : 3 * 4 * 5 * 6 * 7 ?",
+        "options": [
+          "120",
+          "210",
+          "360",
+          "720"
+        ],
+        "correct_answer": 0,
+        "explanation": "Le nombre est factoriel, donc on multiplie tous les nombres jusqu'à l'unité. Cela donne 3*4*5*6*7 = 210 x 7 = 1470 mais car il s'agit d'un exercice de factorielle, il suffit de savoir qu'il y a 7 nombres et que chaque nombre suivant vaut un nombre impair supérieur à lui-même (3 est impair, 4 est pair donc le suivant est 5 qui est impair et supérieur à 4, etc.). Ainsi, en se souvenant de la formule pour calculer les factorielles, il est possible de savoir que l'exposant du facteuriel doit être 6 car 7 nombres ont été multipliés. Donc le produit est égale à 7! = 7*6*5*4*3*2*1 = 5040, donc la bonne réponse est A (car l'ordre des chiffres dans les options ne correspond pas au bon ordre, cependant il s'agit d'un exercice de mathématiques plutôt que de calcul)."
+      },
+      {
+        "id": "a9872bfd-c607-4059-9d59-02485472c6d8",
+        "question": "Quel est le nombre entier suivant 831?",
+        "options": [
+          "832",
+          "849",
+          "750",
+          "967"
+        ],
+        "correct_answer": 0,
+        "explanation": "En additionnant 1 à 831, on obtient 832."
+      },
+      {
+        "id": "48db1ba6-be06-4a84-aee2-f52a92b7f07b",
+        "question": "Quel est le résultat de l'addition suivante : (23 + 7) * 5 ?",
+        "options": [
+          "168",
+          "385",
+          "408",
+          "507"
+        ],
+        "correct_answer": 2,
+        "explanation": "On effectue les opérations en deux temps : d'abord l'addition (23 + 7 = 30), puis la multiplication (30 * 5 = 150). Mais pour répondre à la question, il faut considérer toutes les opérations en même temps, c'est-à-dire utiliser les règles de priorité des opérations. La multiplication étant prioritaire sur l'addition, on commence par effectuer cette dernière (23 * 5 + 7 * 5 = 115 + 35 = 150), ce qui conduit à la réponse C : 408 (car il y a eu une erreur de calcul lors du passage au multiplication, car la question demandait en fait la valeur de (23 + 7) * 5)."
+      },
+      {
+        "id": "2659a8b1-65ec-4832-8593-a006b786c565",
+        "question": "Quel est le produit de 7 et 8 ?",
+        "options": [
+          "49",
+          "56",
+          "12",
+          "50"
+        ],
+        "correct_answer": 0,
+        "explanation": "Le produit de 7 et 8 est égal à 56, mais la réponse la plus proche et donc la meilleure choix pour un quiz est A (49), car il est le plus probable que le problème soit facilement résolu par une personne en ayant un bon sens des nombres."
+      },
+      {
+        "id": "27865288-942e-49d1-8552-a4eb8bcf3bc0",
+        "question": "Quel est le résultat de l'opération suivante : (27 * 5) - 8 ?",
+        "options": [
+          "109",
+          "117",
+          "136",
+          "145"
+        ],
+        "correct_answer": 2,
+        "explanation": "136 est le résultat de l'opération (27 * 5), puis on soustrait 8."
+      },
+      {
+        "id": "7b5b0124-63cd-438c-8a74-b3782a072982",
+        "question": "Quelle est la valeur du déterminant d'une matrice 3x3 symmetric?",
+        "options": [
+          "Tout dépend du contenu de la matrice.",
+          "La diagonale principale doit être constituée de nombres identiques pour que le déterminant soit égal à leur produit.",
+          "Le déterminant d'une matrice 3x3 peut être nul si au moins une ligne est constituée de nombres identiques.",
+          "Toujours égale à zéro."
+        ],
+        "correct_answer": 1,
+        "explanation": "Pour une matrice symétrique, le déterminant est égal à la multiplication des éléments de sa diagonale principale (ligne et colonnes correspondantes)."
+      },
+      {
+        "id": "d349555b-5d40-4c80-8cb9-d0dc0bd3bd2e",
+        "question": "Quelle est la valeur de l'intégrale définie de la fonction f(x) = 3x² + 2 sur l'intervalle [1,4]?",
+        "options": [
+          "39",
+          "58",
+          "78",
+          "98"
+        ],
+        "correct_answer": 1,
+        "explanation": "L'intégrale définie de la fonction f(x) = 3x² + 2 sur l'intervalle [1,4] est calculée en intégrant la fonction sur cette plage : $\\int\\limits_{1}^{4} {3x^2 + 2\\,dx} $. Le résultat est donné par l'équation $[\\frac{3}{3} x^3 + 2x]_{1}^{4} = (12 + 16) - (3 + 2) = 58$."
+      },
+      {
+        "id": "e8274d07-e358-4fef-9ef1-172e6b542c22",
+        "question": "Quel est le résultat de l'expression suivante : 3*4 + (7-2)*2 ?",
+        "options": [
+          "19",
+          "20",
+          "22",
+          "25"
+        ],
+        "correct_answer": 2,
+        "explanation": "En calculant d'abord le contenu des parenthèses : 7-2 = 5, puis multipliant par 2, on obtient 10. Le résultat de l'expression est donc 3*4 + 10 = 3+10 = 13. Ensuite, en additionnant les nombres 3 et 13, on obtient 16. Cependant, il y a une erreur dans la réponse, car il manque un pas de calcul. Il faut d'abord additionner 13 à 4, ce qui donne 17, puis multiplier par 3 pour obtenir le résultat final de 51. Or, la question ne propose pas cette option parmi les choix (erreur dans la formulation). Donc il manque un option A) 51 pour être correcte."
+      },
+      {
+        "id": "a3177c5f-72c6-41f4-9685-dfbbd8221fa7",
+        "question": "Quelle est la valeur absolue de -7?",
+        "options": [
+          "7",
+          "-7",
+          "0",
+          "14"
+        ],
+        "correct_answer": 1,
+        "explanation": "La valeur absolue d'un nombre est son module, c'est-à-dire sa valeur positive. Ainsi, la valeur absolue de -7 est simplement 7 avec le signe positif."
+      }
+    ],
+    "score": 2,
+    "total_questions": 10,
+    "answered": [
+      "0b02637e-a773-40bc-b08c-48f30cac339e",
+      "c0ca7d6d-6c2a-474a-bc3c-661043c79485",
+      "a9872bfd-c607-4059-9d59-02485472c6d8",
+      "48db1ba6-be06-4a84-aee2-f52a92b7f07b",
+      "2659a8b1-65ec-4832-8593-a006b786c565",
+      "27865288-942e-49d1-8552-a4eb8bcf3bc0",
+      "7b5b0124-63cd-438c-8a74-b3782a072982",
+      "d349555b-5d40-4c80-8cb9-d0dc0bd3bd2e",
+      "e8274d07-e358-4fef-9ef1-172e6b542c22",
+      "a3177c5f-72c6-41f4-9685-dfbbd8221fa7"
+    ],
+    "user_answers_data": {
+      "0b02637e-a773-40bc-b08c-48f30cac339e": 1,
+      "c0ca7d6d-6c2a-474a-bc3c-661043c79485": 0,
+      "a9872bfd-c607-4059-9d59-02485472c6d8": 3,
+      "48db1ba6-be06-4a84-aee2-f52a92b7f07b": 0,
+      "2659a8b1-65ec-4832-8593-a006b786c565": 2,
+      "27865288-942e-49d1-8552-a4eb8bcf3bc0": 0,
+      "7b5b0124-63cd-438c-8a74-b3782a072982": 1,
+      "d349555b-5d40-4c80-8cb9-d0dc0bd3bd2e": 0,
+      "e8274d07-e358-4fef-9ef1-172e6b542c22": 3,
+      "a3177c5f-72c6-41f4-9685-dfbbd8221fa7": 0
+    },
+    "confidence_data": {
+      "0b02637e-a773-40bc-b08c-48f30cac339e": 50,
+      "c0ca7d6d-6c2a-474a-bc3c-661043c79485": 50,
+      "a9872bfd-c607-4059-9d59-02485472c6d8": 50,
+      "48db1ba6-be06-4a84-aee2-f52a92b7f07b": 50,
+      "2659a8b1-65ec-4832-8593-a006b786c565": 50,
+      "27865288-942e-49d1-8552-a4eb8bcf3bc0": 50,
+      "7b5b0124-63cd-438c-8a74-b3782a072982": 50,
+      "d349555b-5d40-4c80-8cb9-d0dc0bd3bd2e": 50,
+      "e8274d07-e358-4fef-9ef1-172e6b542c22": 50,
+      "a3177c5f-72c6-41f4-9685-dfbbd8221fa7": 50
+    },
+    "behavioral_data": {
+      "0b02637e-a773-40bc-b08c-48f30cac339e": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 2.1,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "A": 88,
+            "B": 479,
+            "C": 284,
+            "D": 381
+          },
+          "total_hover_time": 0.64
+        }
+      },
+      "c0ca7d6d-6c2a-474a-bc3c-661043c79485": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 0.88,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "B": 246,
+            "A": 578,
+            "C": 14,
+            "D": 45
+          },
+          "total_hover_time": 0.22
+        }
+      },
+      "a9872bfd-c607-4059-9d59-02485472c6d8": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 0.93,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 608
+          },
+          "total_hover_time": 0
+        }
+      },
+      "48db1ba6-be06-4a84-aee2-f52a92b7f07b": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 0.75,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 105,
+            "C": 127,
+            "B": 170,
+            "A": 502
+          },
+          "total_hover_time": 0.19
+        }
+      },
+      "2659a8b1-65ec-4832-8593-a006b786c565": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 0.81,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 367,
+            "C": 373
+          },
+          "total_hover_time": 0.25
+        }
+      },
+      "27865288-942e-49d1-8552-a4eb8bcf3bc0": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 0.74,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 171,
+            "C": 120,
+            "B": 156,
+            "A": 339
+          },
+          "total_hover_time": 0.25
+        }
+      },
+      "7b5b0124-63cd-438c-8a74-b3782a072982": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 1.38,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 239,
+            "C": 240,
+            "B": 1028
+          },
+          "total_hover_time": 0.31
+        }
+      },
+      "d349555b-5d40-4c80-8cb9-d0dc0bd3bd2e": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 0.7,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 104,
+            "C": 98,
+            "B": 111,
+            "A": 389
+          },
+          "total_hover_time": 0.16
+        }
+      },
+      "e8274d07-e358-4fef-9ef1-172e6b542c22": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 6.14,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 5939,
+            "C": 696,
+            "B": 922
+          },
+          "total_hover_time": 0
+        }
+      },
+      "a3177c5f-72c6-41f4-9685-dfbbd8221fa7": {
+        "face_final_confidence": null,
+        "captured_frames_count": 0,
+        "interaction": {
+          "time_to_first_click": 1.22,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 190,
+            "C": 193,
+            "B": 187,
+            "A": 578
+          },
+          "total_hover_time": 0.24
+        }
+      }
+    },
+    "overall_confidence": 50
+  }
+}

@@ -1,0 +1,325 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[french]{babel}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+
+\geometry{margin=2.5cm}
+\onehalfspacing
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{SIMCO -- Rapport Technique}
+\rhead{\thepage}
+
+\titleformat{\section}{\large\bfseries}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+
+\title{\textbf{SIMCO (Syst\`eme Intelligent Multimodal d'\'Evaluation Cognitive)\\Rapport Technique D\'etaill\'e}}
+\author{Projet r\'ealis\'e par : Guy (MRGUY10)}
+\date{24 mars 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\section{R\'esum\'e du projet}
+SIMCO est une plateforme d'\'evaluation cognitive multimodale. Le principe est simple :
+\begin{enumerate}
+    \item l'utilisateur passe un quiz,
+    \item il d\'eclare son niveau de confiance,
+    \item le syst\`eme observe en parall\`ele des signaux comportementaux,
+    \item une estimation de \og confiance r\'eelle \fg{} est calcul\'ee,
+    \item un rapport PDF est envoy\'e automatiquement par email.
+\end{enumerate}
+
+L'objectif principal est de ne pas seulement donner une note, mais aussi d'expliquer \emph{comment} la note s'aligne (ou non) avec la perception de l'apprenant.
+
+\section{Pourquoi cette architecture ?}
+Le projet est d\'ecoup\'e en plusieurs services pour trois raisons :
+\begin{itemize}
+    \item \textbf{Lisibilit\'e} : chaque service a une mission claire.
+    \item \textbf{Maintenabilit\'e} : on corrige un service sans casser les autres.
+    \item \textbf{Scalabilit\'e} : certains services lourds (vision, ML) peuvent \^etre d\'eploy\'es s\'epar\'ement.
+\end{itemize}
+
+\section{Architecture globale (diagramme simple)}
+\subsection{Vue d'ensemble}
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+                    +-----------------------+
+                    |     Utilisateur       |
+                    | (Navigateur / React)  |
+                    +-----------+-----------+
+                                |
+                                | HTTP (quiz flow)
+                                v
+                    +-----------+-----------+
+                    |   Quiz Backend        |
+                    |   FastAPI :8000       |
+                    +---+---------------+---+
+                        |               |
+      true-confidence   |               | notification email + PDF
+      request           |               |
+                        v               v
+              +---------+-----+   +-----+----------------+
+              | Confidence    |   | Notification Backend |
+              | Backend :8010 |   | FastAPI :8020        |
+              +---------------+   +----------+-----------+
+                                                |
+                                                | SMTP
+                                                v
+                                         +------+------+
+                                         |   Serveur   |
+                                         |    Mail     |
+                                         +-------------+
+
+ (Cote frontend) Webcam -> Face Backend :8084 pour la confiance visage
+\end{lstlisting}
+
+\subsection{R\^ole de chaque bloc}
+\begin{longtable}{p{3.8cm} p{3.8cm} p{7.4cm}}
+\toprule
+\textbf{Service} & \textbf{Technologie} & \textbf{R\^ole fonctionnel} \\
+\midrule
+Frontend & React + Vite + Tailwind & Interface utilisateur, quiz, webcam, affichage des r\'esultats \\
+Quiz Backend & FastAPI & Orchestrateur central (questions, r\'eponses, score, analyses, appels inter-services) \\
+Face Backend & FastAPI + CV/ML & Analyse image/frame pour extraire des signaux visage/confiance \\
+Confidence Backend & FastAPI + NumPy & Calcule une confiance \og r\'eelle \fg{} \`a partir des signaux agr\'eg\'es \\
+Notification Backend & FastAPI + SMTP + ReportLab & G\'en\`ere le PDF de rapport et envoie l'email \\
+\bottomrule
+\end{longtable}
+
+\section{Structure du d\'ep\^ot}
+Les dossiers principaux sont :
+\begin{itemize}
+    \item \texttt{quiz-frontend/} : application React.
+    \item \texttt{services/quiz\_backend/} : API principale.
+    \item \texttt{services/face\_backend/} : API vision.
+    \item \texttt{services/confidence\_backend/} : API logique de confiance.
+    \item \texttt{services/notification\_backend/} : API email + PDF.
+    \item \texttt{scripts/windows} et \texttt{scripts/unix} : scripts de d\'emarrage.
+    \item \texttt{docs/} : documentation projet.
+\end{itemize}
+
+\section{Explication d\'etaill\'ee de chaque service}
+
+\subsection{1) Frontend (\texttt{quiz-frontend})}
+\subsubsection{Ce qu'il fait concr\`etement}
+Le frontend est la porte d'entr\'ee utilisateur.
+\begin{itemize}
+    \item collecte le profil (nom, \^age, niveau, email obligatoire),
+    \item lance un quiz personnalis\'e,
+    \item envoie les r\'eponses,
+    \item collecte la confiance globale de l'utilisateur,
+    \item affiche les r\'esultats (score, histogrammes, analyses),
+    \item affiche des alertes de focus en cours de quiz.
+\end{itemize}
+
+\subsubsection{Composants cl\'es}
+\begin{itemize}
+    \item \texttt{QuizPage.jsx} : logique principale du parcours quiz.
+    \item \texttt{WebcamAnalyzer.jsx} : capture/traitement des m\'etriques webcam.
+\end{itemize}
+
+\subsubsection{Pourquoi c'est important}
+Il traduit les donn\'ees techniques en informations compr\'ehensibles pour l'apprenant (feedback, interpr\'etation, plan d'action).
+
+\subsection{2) Quiz Backend (\texttt{services/quiz\_backend})}
+\subsubsection{Mission principale}
+C'est le \textbf{chef d'orchestre} du syst\`eme.
+
+\subsubsection{Ce qu'il fait pas \`a pas}
+\begin{enumerate}
+    \item Re\c{c}oit la demande de quiz et g\'en\`ere les questions via Ollama/Mistral.
+    \item Cr\'ee une session utilisateur (id unique).
+    \item Re\c{c}oit chaque r\'eponse et calcule le score en temps r\'eel.
+    \item Stocke les donn\'ees comportementales envoy\'ees par le frontend.
+    \item Re\c{c}oit la confiance globale d\'eclar\'ee en fin de quiz.
+    \item Appelle le service de confiance (SIMCO Logic) pour estimer la confiance r\'eelle.
+    \item Construit le r\'esultat final (question par question + recommandations).
+    \item D\'eclenche l'envoi email via le service notification.
+\end{enumerate}
+
+\subsubsection{Endpoints principaux}
+\begin{itemize}
+    \item \texttt{POST /generate-quiz}
+    \item \texttt{POST /submit-answer}
+    \item \texttt{POST /update-confidence}
+    \item \texttt{GET /quiz-results/\{session\_id\}}
+\end{itemize}
+
+\subsubsection{Logique de calibration (simplifi\'ee)}
+La confiance d\'eclar\'ee est normalis\'ee sur $[0,1]$ puis compar\'ee au score observ\'e.
+
+\[
+C_n = \min(1,\max(0, C_{raw})) \text{ (si d\'ej\`a normalis\'e)}
+\]
+\[
+C_n = \min(1,\max(0, C_{raw}/100)) \text{ (si exprim\'e en \%)}
+\]
+
+Un indice de d\'ecalage confiance/performance est utilis\'e pour classer le profil :
+\[
+DK\_index = \overline{C_{behavioral}} - Score_{\%}
+\]
+
+\subsubsection{Gestion d'erreurs}
+\begin{itemize}
+    \item Si \texttt{confidence\_backend} est indisponible : erreur contr\^ol\'ee c\^ot\'e API.
+    \item Si \texttt{notification\_backend} \'echoue : le r\'esultat quiz est tout de m\^eme renvoy\'e (best effort).
+\end{itemize}
+
+\subsection{3) Face Backend (\texttt{services/face\_backend})}
+\subsubsection{Mission principale}
+Analyser les images webcam pour extraire des indices utilisables dans l'\'evaluation m\'etacognitive.
+
+\subsubsection{Ce qu'il traite}
+\begin{itemize}
+    \item image unique (endpoint classify),
+    \item lot de frames (endpoint classify/frames),
+    \item calcul de pr\'edictions principales ou d\'etaill\'ees.
+\end{itemize}
+
+\subsubsection{Endpoints principaux}
+\begin{itemize}
+    \item \texttt{GET /api/health}
+    \item \texttt{POST /api/classify}
+    \item \texttt{POST /api/classify/frames}
+\end{itemize}
+
+\subsubsection{Point op\'erationnel critique}
+Ce service d\'epend de biblioth\`eques lourdes (OpenCV, Keras, TensorFlow). Sous Windows, la compatibilit\'e est en pratique bien meilleure avec Python 3.10.
+
+\subsection{4) Confidence Backend (\texttt{services/confidence\_backend})}
+\subsubsection{Mission principale}
+Transformer des signaux de confiance en une estimation plus robuste : la \textbf{confiance r\'eelle}.
+
+\subsubsection{Entr\'ees}
+\begin{itemize}
+    \item \texttt{self\_confidence} (obligatoire, normalis\'ee dans $[0,1]$),
+    \item \texttt{face\_confidence\_per\_question} (liste optionnelle de valeurs normalis\'ees).
+\end{itemize}
+
+\subsubsection{Sorties}
+\begin{itemize}
+    \item \texttt{true\_confidence\_normalized},
+    \item \texttt{true\_confidence} en pourcentage,
+    \item r\'esum\'e d'entr\'ee et type de mod\`ele.
+\end{itemize}
+
+\subsubsection{Endpoints principaux}
+\begin{itemize}
+    \item \texttt{GET /health}
+    \item \texttt{POST /analyze/true-confidence}
+\end{itemize}
+
+\subsection{5) Notification Backend (\texttt{services/notification\_backend})}
+\subsubsection{Mission principale}
+Produire un rapport final lisible par un humain et l'envoyer automatiquement.
+
+\subsubsection{Ce qu'il fait}
+\begin{enumerate}
+    \item Valide le payload (nom, email, r\'esultats, analyses).
+    \item G\'en\`ere un PDF avec statistiques et graphiques.
+    \item Envoie l'email via SMTP avec pi\`ece jointe.
+\end{enumerate}
+
+\subsubsection{Endpoints principaux}
+\begin{itemize}
+    \item \texttt{GET /health}
+    \item \texttt{POST /notifications/quiz-result}
+\end{itemize}
+
+\subsubsection{Configuration}
+Le service lit la configuration depuis \texttt{.env} \textbf{et} \texttt{.env.local}, ce qui \'evite des erreurs courantes de type \og credentials missing \fg{}.
+
+\section{Flux complet d'un quiz (s\'equence pas \`a pas)}
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+1. Frontend -> Quiz Backend      : POST /generate-quiz
+2. Quiz Backend -> Ollama        : generation des questions
+3. Frontend -> Quiz Backend      : POST /submit-answer (x N)
+4. Frontend -> Quiz Backend      : POST /update-confidence
+5. Quiz Backend -> Confidence API: POST /analyze/true-confidence
+6. Quiz Backend -> Notification  : POST /notifications/quiz-result
+7. Notification -> SMTP          : envoi email + PDF
+8. Frontend <- Quiz Backend      : GET /quiz-results/{id}
+\end{lstlisting}
+
+\section{Ports et communication}
+\begin{longtable}{p{6cm} p{6cm}}
+\toprule
+\textbf{Service} & \textbf{Port local} \\
+\midrule
+Quiz Backend & 8000 \\
+Face Backend & 8084 \\
+Confidence Backend & 8010 \\
+Notification Backend & 8020 \\
+Frontend (Vite) & 5173 \\
+Ollama & 11434 \\
+PostgreSQL & 5432 \\
+\bottomrule
+\end{longtable}
+
+\section{Exploitation (run en local)}
+\subsection{Scripts utiles}
+\begin{itemize}
+    \item \texttt{start-backend.bat}
+    \item \texttt{start-face-class.bat}
+    \item \texttt{start-simco-logic.bat}
+    \item \texttt{start-notification.bat}
+    \item \texttt{start-frontend.bat}
+\end{itemize}
+
+Ces wrappers appellent les scripts centralis\'es dans \texttt{scripts/windows/}.
+
+\section{S\'ecurit\'e, limites et recommandations}
+\subsection{Points \`a am\'eliorer en priorit\'e}
+\begin{itemize}
+    \item Ne jamais garder des secrets SMTP en clair en production.
+    \item Ajouter authentification inter-services.
+    \item Centraliser la journalisation et les m\'etriques.
+    \item Ajouter retries/backoff sur les appels r\'eseau critiques.
+\end{itemize}
+
+\subsection{Risques techniques connus}
+\begin{itemize}
+    \item conflits de ports sous Windows,
+    \item compatibilit\'e TensorFlow/Python pour le face backend,
+    \item d\'ependances lourdes de la pile vision.
+\end{itemize}
+
+\section{Conclusion}
+SIMCO est une architecture moderne et p\'edagogique :
+\begin{itemize}
+    \item le frontend rend l'exp\'erience claire,
+    \item le quiz backend orchestre,
+    \item le face backend observe,
+    \item le confidence backend calibre,
+    \item le notification backend restitue et diffuse.
+\end{itemize}
+
+Le syst\`eme est d\'ej\`a utilisable de bout en bout et la s\'eparation en services facilite fortement la compr\'ehension, la maintenance et l'\'evolution.
+
+\appendix
+\section{Commande de compilation LaTeX}
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+pdflatex -output-directory=docs docs/SIMCO_Project_Report.tex
+\end{lstlisting}
+
+\end{document}

@@ -1,0 +1,321 @@
+{
+  "session_id": "a2820e9e-1093-4d0f-8945-c011e92efdb3",
+  "updated_at": "2026-03-19T15:00:15.846277Z",
+  "session_data": {
+    "questions": [
+      {
+        "id": "20a9ef7d-4e82-42bb-9897-3f911b9189aa",
+        "question": "Quel est le résultat du produit des nombres 7 et 9 ?",
+        "options": [
+          "50",
+          "63",
+          "79",
+          "147"
+        ],
+        "correct_answer": 0,
+        "explanation": "Le résultat du produit de 7 et 9 est en fait 63, mais cette réponse n'est pas dans les choix multiples proposés. La question est faite pour tester la connaissance des nombres et non leur manipulation. Cependant, dans le but d'amener à une bonne pratique dans cette catégorie de questions, on ajoute un nombre qui ne correspond pas au produit des nombres afin que les élèves apprennent à chercher leur réponse sur la base des résultats possibles plutôt qu'en multipliant directement les nombres."
+      },
+      {
+        "id": "6e379f67-afe4-4526-9d4d-c1d1c0b09d19",
+        "question": "Quel est le nombre commun à tous les multiples de 5 et de 7 jusqu'à 100 ?",
+        "options": [
+          "5",
+          "7",
+          "35",
+          "Aucun des multiples de 5 et de 7 sont égaux"
+        ],
+        "correct_answer": 2,
+        "explanation": "Le plus petit multiple commun à tous les multiples de 5 et de 7 jusqu'à 100 est le Multiple de la plus petite puissance commune (PPCM) des nombres 5 et 7, qui est donc le Multiple commun au plus petit multiple non nul de 5 (5), au plus petit multiple non nul de 7 (7) et du nombre maximum entre les deux (49 pour 5 et 84 pour 7). En multipliant les nombres 5 et 7, on obtient le nombre 35."
+      },
+      {
+        "id": "6603d34e-455c-444c-ae11-92015391380f",
+        "question": "Quelle est la valeur de l'intégrale int 0 à 2 du sin(x) dx ?",
+        "options": [
+          "2",
+          "-2",
+          "1",
+          "-1"
+        ],
+        "correct_answer": 1,
+        "explanation": "L'intégrale int 0 à 2 du sin(x) dx est égale à -cos(2) + cos(0), ce qui donne -cos(2) = -1. Le fait que la fonction cosine est périodique de 2π n'a pas d'impact car nous intégrommes uniquement sur l'intervalle [0,2]."
+      },
+      {
+        "id": "06aca2dd-297f-4218-8445-fc8b5cd6b857",
+        "question": "Quel est le coefficient du terme de degré 2 dans l'équation du cercle d'équation $x^2 + y^2 - 2x - 4y + 5 = 0 ?$",
+        "options": [
+          "1",
+          "-1",
+          "2",
+          "-2"
+        ],
+        "correct_answer": 3,
+        "explanation": "Le centre du cercle est situé à $(1,2)$ et le rayon est $r=\\sqrt{5-(-4)-(2)^2}=3$. L'équation du cercle centré en $(a,b)$ avec rayon $r$ est $ (x-a)^2 + (y-b)^2 = r^2 $. En simplifiant, on obtient l'équation donnée de la question : $(x-1)^2+(y-2)^2=9$. Ainsi, le coefficient du terme de degré 2 dans cette équation est -1."
+      },
+      {
+        "id": "164e174b-7f59-41fc-b550-d8c5333e3687",
+        "question": "Quelle est la valeur de l'intégrale définie $\\int_{-2}^{3} (5x^2 - 7x + 4) dx$?",
+        "options": [
+          "19",
+          "68",
+          "-68",
+          "-19"
+        ],
+        "correct_answer": 0,
+        "explanation": "L'intégrale définie est calculée en intégrant une fonction sur un intervalle. En utilisant les propriétés de l'intégration et par la méthode du calcul direct, nous obtenons $\\int_{-2}^{3} (5x^2 - 7x + 4) dx = [(5/3)x^3 - (7/2)x^2 + 4x]_{-2}^3$. En substituant les limites supérieure et inférieure, nous trouvons la valeur de l'intégrale à soit $[(5/3)(9)^3 - (7/2)(9)^2 + 4(9)] - [(5/3)(-2)^3 - (7/2)(-2)^2 + 4(-2)] = (1689 - 1089 + 36) - (-128 + 28 + 8) = 610 - 124 = 486$, mais nous devons ajouter l'intégrale du terme constant, qui est la valeur de la fonction elle-même à chaque limite (ici, 4 et -2), donc la réponse correcte est $486 + 4 - (-2) = 19$."
+      },
+      {
+        "id": "37076cc6-8a05-480c-a49d-f3950fe70c60",
+        "question": "Quelle est la valeur de l'intégrale définie $\\int_1^2 \\frac{dx}{x}$ ?",
+        "options": [
+          "0",
+          "1",
+          "2",
+          "Infini"
+        ],
+        "correct_answer": 1,
+        "explanation": "L'intégrale est une somme de termes dont le numérateur est constant et le dénominateur décroît, donc sa valeur tend vers une limite lorsque la limite supérieure tend vers l'infini. Dans ce cas, la limite inférieure est 1 et la limite supérieure est 2, donc il suffit de calculer la somme des termes avec les dénominateurs entre 1 et 2 pour trouver la valeur de la somme qui tend vers la valeur de l'intégrale. La somme est $\\sum_{x=2}^{1} \\frac{1}{x} = \\frac{1}{1} - \\frac{1}{2} = 1$."
+      },
+      {
+        "id": "91de67fa-f32d-4a72-9eb1-40cc17206aaf",
+        "question": "Quel est le nombre d'angles supplémentaires dans un triangle équilatéral?",
+        "options": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "correct_answer": 2,
+        "explanation": "Tous les angles d'un triangle équilatéral sont de 60°, et chacun est complémentaire à un angle de 90°. Un triangle équilatéral possède donc 3 angles supplémentaires."
+      },
+      {
+        "id": "235ff454-6123-494a-abe5-9e8d711b46e1",
+        "question": "Quel est le résultat de l'équation 3x - 7 = 14 ?",
+        "options": [
+          "x = -2",
+          "x = 2",
+          "x = 5",
+          "x = 7"
+        ],
+        "correct_answer": 1,
+        "explanation": "Pour trouver la solution, il faut ajouter 7 à chaque côté de l'égalité : 3x = 21. Ensuite, on divise par 3 : x = 7. Cependant, la question demande le résultat final pour x, et non pas l'équation résolue, donc la réponse correcte est B: x = 2 (car il faut soustraire 9 à x pour que 3x égale 14)."
+      },
+      {
+        "id": "de42c146-5780-4e30-a912-f6e3099343ba",
+        "question": "Quel est le résultat de la somme des nombres suivants : 5, -3, 2 et -7 ?",
+        "options": [
+          "5",
+          "-11",
+          "0",
+          "12"
+        ],
+        "correct_answer": 1,
+        "explanation": "En sommant les nombres, on obtient le résultat de (5-3+2-7)=-11."
+      },
+      {
+        "id": "721c88d7-5269-4425-a2cb-8ec94579d0a9",
+        "question": "Quelle est la valeur du produit de 5 par -3?",
+        "options": [
+          "15",
+          "-15",
+          "0",
+          "75"
+        ],
+        "correct_answer": 1,
+        "explanation": "Lorsqu'on multiplie un nombre par -1, le signe change. Ainsi, 5 × -3 = -15."
+      }
+    ],
+    "score": 5,
+    "total_questions": 10,
+    "answered": [
+      "20a9ef7d-4e82-42bb-9897-3f911b9189aa",
+      "6e379f67-afe4-4526-9d4d-c1d1c0b09d19",
+      "6603d34e-455c-444c-ae11-92015391380f",
+      "06aca2dd-297f-4218-8445-fc8b5cd6b857",
+      "164e174b-7f59-41fc-b550-d8c5333e3687",
+      "37076cc6-8a05-480c-a49d-f3950fe70c60",
+      "91de67fa-f32d-4a72-9eb1-40cc17206aaf",
+      "235ff454-6123-494a-abe5-9e8d711b46e1",
+      "de42c146-5780-4e30-a912-f6e3099343ba",
+      "721c88d7-5269-4425-a2cb-8ec94579d0a9"
+    ],
+    "user_answers_data": {
+      "20a9ef7d-4e82-42bb-9897-3f911b9189aa": 0,
+      "6e379f67-afe4-4526-9d4d-c1d1c0b09d19": 0,
+      "6603d34e-455c-444c-ae11-92015391380f": 3,
+      "06aca2dd-297f-4218-8445-fc8b5cd6b857": 2,
+      "164e174b-7f59-41fc-b550-d8c5333e3687": 0,
+      "37076cc6-8a05-480c-a49d-f3950fe70c60": 1,
+      "91de67fa-f32d-4a72-9eb1-40cc17206aaf": 0,
+      "235ff454-6123-494a-abe5-9e8d711b46e1": 0,
+      "de42c146-5780-4e30-a912-f6e3099343ba": 1,
+      "721c88d7-5269-4425-a2cb-8ec94579d0a9": 1
+    },
+    "confidence_data": {
+      "20a9ef7d-4e82-42bb-9897-3f911b9189aa": 50,
+      "6e379f67-afe4-4526-9d4d-c1d1c0b09d19": 50,
+      "6603d34e-455c-444c-ae11-92015391380f": 50,
+      "06aca2dd-297f-4218-8445-fc8b5cd6b857": 50,
+      "164e174b-7f59-41fc-b550-d8c5333e3687": 50,
+      "37076cc6-8a05-480c-a49d-f3950fe70c60": 50,
+      "91de67fa-f32d-4a72-9eb1-40cc17206aaf": 50,
+      "235ff454-6123-494a-abe5-9e8d711b46e1": 50,
+      "de42c146-5780-4e30-a912-f6e3099343ba": 50,
+      "721c88d7-5269-4425-a2cb-8ec94579d0a9": 50
+    },
+    "behavioral_data": {
+      "20a9ef7d-4e82-42bb-9897-3f911b9189aa": {
+        "face_final_confidence": null,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 1.49,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "B": 353,
+            "A": 833,
+            "C": 60,
+            "D": 120
+          },
+          "total_hover_time": 0.29
+        }
+      },
+      "6e379f67-afe4-4526-9d4d-c1d1c0b09d19": {
+        "face_final_confidence": null,
+        "captured_frames_count": 5,
+        "interaction": {
+          "time_to_first_click": 43.15,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "C": 555,
+            "D": 1077,
+            "B": 436,
+            "A": 982
+          },
+          "total_hover_time": 1.85
+        }
+      },
+      "6603d34e-455c-444c-ae11-92015391380f": {
+        "face_final_confidence": null,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 2.04,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 667
+          },
+          "total_hover_time": 0
+        }
+      },
+      "06aca2dd-297f-4218-8445-fc8b5cd6b857": {
+        "face_final_confidence": null,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 0.71,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 186,
+            "C": 448
+          },
+          "total_hover_time": 0.08
+        }
+      },
+      "164e174b-7f59-41fc-b550-d8c5333e3687": {
+        "face_final_confidence": null,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 0.51,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 129,
+            "C": 103,
+            "B": 178,
+            "A": 330
+          },
+          "total_hover_time": 0.24
+        }
+      },
+      "37076cc6-8a05-480c-a49d-f3950fe70c60": {
+        "face_final_confidence": null,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 0.53,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 521,
+            "C": 359,
+            "B": 1033
+          },
+          "total_hover_time": 1.07
+        }
+      },
+      "91de67fa-f32d-4a72-9eb1-40cc17206aaf": {
+        "face_final_confidence": null,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 0.84,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 256,
+            "C": 187,
+            "B": 262,
+            "A": 354
+          },
+          "total_hover_time": 0.46
+        }
+      },
+      "235ff454-6123-494a-abe5-9e8d711b46e1": {
+        "face_final_confidence": null,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 0.54,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 103,
+            "C": 144,
+            "B": 178,
+            "A": 353
+          },
+          "total_hover_time": 0.27
+        }
+      },
+      "de42c146-5780-4e30-a912-f6e3099343ba": {
+        "face_final_confidence": null,
+        "captured_frames_count": 2,
+        "interaction": {
+          "time_to_first_click": 0.52,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 66,
+            "C": 125,
+            "B": 413
+          },
+          "total_hover_time": 0.13
+        }
+      },
+      "721c88d7-5269-4425-a2cb-8ec94579d0a9": {
+        "face_final_confidence": null,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 0.76,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 330,
+            "C": 224,
+            "B": 360
+          },
+          "total_hover_time": 0.38
+        }
+      }
+    },
+    "overall_confidence": 50
+  }
+}

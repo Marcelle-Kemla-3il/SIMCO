@@ -1,0 +1,12 @@
+﻿{
+  "user_name": "Jordan",
+  "user_email": "kamdemjordan59@gmail.com",
+  "quiz_result": {
+    "score": 7,
+    "total_questions": 10,
+    "percentage": 70,
+    "level": "Bien",
+    "message": "Bonne performance",
+    "recommendations": ["Reviser les questions ratees", "Continuer la pratique"]
+  }
+}

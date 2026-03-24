@@ -1,26 +1,53 @@
 version: '3.8'
 
 services:
+  # PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: simco-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=simco
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - simco-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d simco"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   # Backend FastAPI
   backend:
     build:
-      context: ./backend
+      context: ./services/quiz_backend
       dockerfile: Dockerfile
     container_name: simco-backend
     ports:
       - "8000:8000"
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/simco
+      - FACE_BACKEND_URL=http://face-backend:8084
       - TRAINING_DATA_PATH=/app/data/training
       - MODELS_PATH=/app/data/models
     volumes:
-      - ./backend:/app
+      - ./services/quiz_backend:/app/services/quiz_backend
       - backend-data:/app/data
     depends_on:
-      - ollama
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      face-backend:
+        condition: service_started
     networks:
       - simco-network
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn services.quiz_backend.main:app --host 0.0.0.0 --port 8000 --reload
 
   # Frontend React (Vite)
   frontend:
@@ -41,6 +68,17 @@ services:
       - simco-network
     command: npm run dev -- --host 0.0.0.0
 
+  # Face Classification Backend
+  face-backend:
+    build:
+      context: ./services/face_backend
+      dockerfile: Dockerfile
+    container_name: simco-face-backend
+    ports:
+      - "8084:8084"
+    networks:
+      - simco-network
+
   # Ollama with Mistral
   ollama:
     image: ollama/ollama:latest
@@ -51,12 +89,14 @@ services:
       - ollama-data:/root/.ollama
     networks:
       - simco-network
-    entrypoint: ["/bin/sh", "-c", "ollama pull mistral && ollama serve"]
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull mistral && wait"]
 
 volumes:
   backend-data:
     driver: local
   ollama-data:
+    driver: local
+  postgres-data:
     driver: local
 
 networks:

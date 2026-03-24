@@ -1,0 +1,324 @@
+{
+  "session_id": "2e951204-e527-49ce-bb23-bb94654fe628",
+  "updated_at": "2026-03-19T15:13:18.652059Z",
+  "session_data": {
+    "questions": [
+      {
+        "id": "02493c7b-243c-4727-9e0b-5119bd707522",
+        "question": "Quel est le résultat du produit des nombres 7 et 9?",
+        "options": [
+          "42",
+          "63",
+          "56",
+          "108"
+        ],
+        "correct_answer": 1,
+        "explanation": "Le résultat de la multiplication de 7 par 9 est égale à 63."
+      },
+      {
+        "id": "9f1d192e-f851-49e4-a83b-232197b8dc28",
+        "question": "Quel est le résultat de l'intégration de l'expression ∫(3x^2 - 4x + 7) dx?",
+        "options": [
+          "3/5 x^3 - 2x^2 + 7x + C",
+          "5/3 x^3 - 2x^2 + 7x + C",
+          "3/5 x^3 + 2x^2 - 7x + C",
+          "5/3 x^3 + 2x^2 + 7x + C"
+        ],
+        "correct_answer": 0,
+        "explanation": "En appliquant la formule de l'intégration par parties, on trouve cette intégrale."
+      },
+      {
+        "id": "ccf3cee9-f2ff-4fe3-b62d-879616a8f45f",
+        "question": "Quel est le nombre de solutions pour l'équation du second degré ax² + bx + c = 0 en prenant a>0 et b²<4ac ?",
+        "options": [
+          "Exactement deux solutions distinctes.",
+          "Exactement une solution unique.",
+          "Plusieurs solutions multiples ou aucune solution.",
+          "Impossible de déterminer le nombre de solutions sans plus d'informations."
+        ],
+        "correct_answer": 0,
+        "explanation": "Lorsque b²<4ac, l'équation du second degré possède exactement deux solutions distinctes (racines réelles) en prenant a>0."
+      },
+      {
+        "id": "1595bcd7-5f0a-435a-bc54-90f733c153da",
+        "question": "Quel est le résultat de l'expression suivante : 3x^2 - 5x + 2 ?",
+        "options": [
+          "x + 2",
+          "3x^2 + 5x - 2",
+          "(x - 1)(3x - 2)",
+          "x^2 - 5x + 2"
+        ],
+        "correct_answer": 2,
+        "explanation": "L'expression peut être factorisée en un facteur commun, donnant donc : (x - 1)(3x - 2)."
+      },
+      {
+        "id": "a1561123-5c05-45f8-8897-87263c1fa8a4",
+        "question": "Quel est le résultat de l'équation 3x - 2 = 7 ?",
+        "options": [
+          "x = 1",
+          "x = 3",
+          "x = 5",
+          "x = 7"
+        ],
+        "correct_answer": 0,
+        "explanation": "Pour trouver la valeur de x, on ajoute 2 à chaque côté de l'égalité : 3x = 9. Puis on divise par 3 : x = 3/1. Comme x est un nombre entier, il doit être un multiple de 3. Les multiples de 3 inférieurs à 9 sont 3 et 6, mais seul 3 satisfait l'égalité 3x - 2 = 7."
+      },
+      {
+        "id": "579dc30e-9166-41db-9a07-4b9a59d7be62",
+        "question": "Quelle est la valeur de l'intégrale de la fonction sin(x) sur l'intervalle [0, π] ?",
+        "options": [
+          "2",
+          "0",
+          "-2",
+          "1"
+        ],
+        "correct_answer": 0,
+        "explanation": "L'intégrale de sin(x) sur [0, π] est égale à la somme des valeurs des intégrales de sin(x) sur les sous-intervalles [0, π/2] et [π/2, π]. En calculant ces deux parties, on obtient que l'intégrale de sin(x) sur l'intervalle [0, π] vaut 2."
+      },
+      {
+        "id": "eca7c716-ed99-474f-8b47-11ef608c3ace",
+        "question": "Quel est le résultat de l'intégration intégra ∫ (3x^2 - 4x + 5) dx?",
+        "options": [
+          "1/3 x^3 - 2x^2 + 5x + C",
+          "3x^3 - 4x^2 + 5x + C",
+          "x^3 - 4x^2 + 5x + C",
+          "3x^3 + 4x^2 - 5x + C"
+        ],
+        "correct_answer": 0,
+        "explanation": "En appliquant les règles de l'intégration, on trouve que l'intégral est égale à 1/3 x^3 - 2x^2 + 5x + C."
+      },
+      {
+        "id": "4e0d0717-cec4-4cdc-8ae6-b997756f1e81",
+        "question": "Quelle est la valeur exacte du sinus de 30 degrés ?",
+        "options": [
+          "0.5",
+          "0.866",
+          "1",
+          "0.25"
+        ],
+        "correct_answer": 1,
+        "explanation": "Le sinus d'un angle a donné par la formule sin(a) = opp/hypoténuse, où l'opposant est de 30 unités et la longueur hypoténuse est le rayon de cercle de rayon unitaire centré sur le point O qui contient l'angle a. Comme l'angle a est un angle droit (90 degrés), l'hypoténuse a une longueur égale à la racine carrée de 2 (√2). L'opposant oppose est donc de 30 unités et on a sin(30) = opp/hypoténuse = 30/(√2) qui donne environ 0.866."
+      },
+      {
+        "id": "f4eeacc3-9786-4025-9fbb-8c934587a6c9",
+        "question": "Quelle est la valeur de l'intégrale $\\int_1^4 3x^2 dx$ ?",
+        "options": [
+          "36",
+          "90",
+          "72",
+          "18"
+        ],
+        "correct_answer": 2,
+        "explanation": "L'intégrale se calcule en multipliant la fonction intégrante par l'antidérivée de 3x², c'est-à-dire $\\frac{3}{3}x^3$ puis en calculant le terme final à partir du limite supérieure et inférieure. Donc $3 \\cdot [\\frac{3}{3}(4)^3 - \\frac{3}{3}(1)^3] = 72$."
+      },
+      {
+        "id": "276befb5-bc3f-4bd5-853b-9dbfad262d77",
+        "question": "Quel est le résultat de l'intégration de la fonction `f(x)=3x^2+4x-7` sur l'intervalle `[1, 4]` ?",
+        "options": [
+          "85",
+          "-85",
+          "60",
+          "-60"
+        ],
+        "correct_answer": 2,
+        "explanation": "La formule générale pour intégrer une fonction polynomiale est `(a*x^(n+1))/(n+1)` où `a` est le coefficient de la plus haute puissance de `x`. Ici, `n=2`, donc l'intégrale est donnée par :"
+      }
+    ],
+    "score": 6,
+    "total_questions": 10,
+    "answered": [
+      "02493c7b-243c-4727-9e0b-5119bd707522",
+      "9f1d192e-f851-49e4-a83b-232197b8dc28",
+      "ccf3cee9-f2ff-4fe3-b62d-879616a8f45f",
+      "1595bcd7-5f0a-435a-bc54-90f733c153da",
+      "a1561123-5c05-45f8-8897-87263c1fa8a4",
+      "579dc30e-9166-41db-9a07-4b9a59d7be62",
+      "eca7c716-ed99-474f-8b47-11ef608c3ace",
+      "4e0d0717-cec4-4cdc-8ae6-b997756f1e81",
+      "f4eeacc3-9786-4025-9fbb-8c934587a6c9",
+      "276befb5-bc3f-4bd5-853b-9dbfad262d77"
+    ],
+    "user_answers_data": {
+      "02493c7b-243c-4727-9e0b-5119bd707522": 0,
+      "9f1d192e-f851-49e4-a83b-232197b8dc28": 1,
+      "ccf3cee9-f2ff-4fe3-b62d-879616a8f45f": 0,
+      "1595bcd7-5f0a-435a-bc54-90f733c153da": 2,
+      "a1561123-5c05-45f8-8897-87263c1fa8a4": 0,
+      "579dc30e-9166-41db-9a07-4b9a59d7be62": 2,
+      "eca7c716-ed99-474f-8b47-11ef608c3ace": 0,
+      "4e0d0717-cec4-4cdc-8ae6-b997756f1e81": 1,
+      "f4eeacc3-9786-4025-9fbb-8c934587a6c9": 0,
+      "276befb5-bc3f-4bd5-853b-9dbfad262d77": 2
+    },
+    "confidence_data": {
+      "02493c7b-243c-4727-9e0b-5119bd707522": 71,
+      "9f1d192e-f851-49e4-a83b-232197b8dc28": 71,
+      "ccf3cee9-f2ff-4fe3-b62d-879616a8f45f": 71,
+      "1595bcd7-5f0a-435a-bc54-90f733c153da": 71,
+      "a1561123-5c05-45f8-8897-87263c1fa8a4": 71,
+      "579dc30e-9166-41db-9a07-4b9a59d7be62": 71,
+      "eca7c716-ed99-474f-8b47-11ef608c3ace": 71,
+      "4e0d0717-cec4-4cdc-8ae6-b997756f1e81": 71,
+      "f4eeacc3-9786-4025-9fbb-8c934587a6c9": 71,
+      "276befb5-bc3f-4bd5-853b-9dbfad262d77": 71
+    },
+    "behavioral_data": {
+      "02493c7b-243c-4727-9e0b-5119bd707522": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 1.58,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "C": 196,
+            "B": 218,
+            "A": 583,
+            "D": 40
+          },
+          "total_hover_time": 0.26
+        }
+      },
+      "9f1d192e-f851-49e4-a83b-232197b8dc28": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 1.2,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "B": 931,
+            "C": 117,
+            "D": 160
+          },
+          "total_hover_time": 0
+        }
+      },
+      "ccf3cee9-f2ff-4fe3-b62d-879616a8f45f": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 1.24,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 679,
+            "C": 373,
+            "B": 257,
+            "A": 610
+          },
+          "total_hover_time": 0.43
+        }
+      },
+      "1595bcd7-5f0a-435a-bc54-90f733c153da": {
+        "face_final_confidence": 0.53,
+        "captured_frames_count": 2,
+        "interaction": {
+          "time_to_first_click": 1.22,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 1238,
+            "C": 2161,
+            "B": 4077
+          },
+          "total_hover_time": 0.25
+        }
+      },
+      "a1561123-5c05-45f8-8897-87263c1fa8a4": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 0.92,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 145,
+            "C": 846,
+            "B": 253,
+            "A": 2363
+          },
+          "total_hover_time": 0.31
+        }
+      },
+      "579dc30e-9166-41db-9a07-4b9a59d7be62": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 2,
+        "interaction": {
+          "time_to_first_click": 0.69,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 1041,
+            "C": 716
+          },
+          "total_hover_time": 0.1
+        }
+      },
+      "eca7c716-ed99-474f-8b47-11ef608c3ace": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 2,
+        "interaction": {
+          "time_to_first_click": 2.02,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 519,
+            "C": 480,
+            "B": 437,
+            "A": 1848
+          },
+          "total_hover_time": 0.5
+        }
+      },
+      "4e0d0717-cec4-4cdc-8ae6-b997756f1e81": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 0.79,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "D": 280,
+            "C": 6188,
+            "B": 887
+          },
+          "total_hover_time": 0.24
+        }
+      },
+      "f4eeacc3-9786-4025-9fbb-8c934587a6c9": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 2,
+        "interaction": {
+          "time_to_first_click": 2.1,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "B": 666,
+            "C": 253,
+            "D": 292,
+            "A": 469
+          },
+          "total_hover_time": 0.92
+        }
+      },
+      "276befb5-bc3f-4bd5-853b-9dbfad262d77": {
+        "face_final_confidence": 0.65,
+        "captured_frames_count": 1,
+        "interaction": {
+          "time_to_first_click": 4.42,
+          "answer_changes": 0,
+          "answer_change_history": [],
+          "hover_times": {
+            "C": 1216,
+            "B": 179,
+            "A": 2821,
+            "D": 355
+          },
+          "total_hover_time": 3.79
+        }
+      }
+    },
+    "overall_confidence": 71
+  }
+}

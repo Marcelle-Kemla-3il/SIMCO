@@ -1,5 +1,2 @@
 @echo off
-echo Starting SIMCO Quiz Frontend...
-cd quiz-frontend
-npm run dev
-pause
+call "%~dp0scripts\windows\start-frontend.bat"

@@ -4,23 +4,30 @@
 # Ignore ssimco folder (archived - not using Python vision code)
 _archive_ssimco/
 
-# Backend
-backend/__pycache__/
-backend/*.pyc
-backend/venv/
-backend/env/
-backend/.env
-backend/data/training/*.jsonl
-backend/data/training/*.csv
-backend/data/models/*.pkl
-backend/data/models/*.joblib
-backend/*.log
+# Backend services
+services/quiz_backend/__pycache__/
+services/quiz_backend/*.pyc
+services/quiz_backend/venv/
+services/quiz_backend/env/
+services/quiz_backend/.env
+services/quiz_backend/data/training/*.jsonl
+services/quiz_backend/data/training/*.csv
+services/quiz_backend/data/models/*.pkl
+services/quiz_backend/data/models/*.joblib
+services/quiz_backend/*.log
+services/face_backend/__pycache__/
+services/face_backend/.venv*/
+services/confidence_backend/__pycache__/
+services/notification_backend/__pycache__/
+services/notification_backend/app/__pycache__/
+services/notification_backend/.env
+services/notification_backend/.env.local
 
 # Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.env.local
-frontend/.env.*.local
+quiz-frontend/node_modules/
+quiz-frontend/dist/
+quiz-frontend/.env.local
+quiz-frontend/.env.*.local
 
 # IDE
 .vscode/

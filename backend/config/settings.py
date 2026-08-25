@@ -3,6 +3,8 @@ Configuration settings for the SIMCO backend application.
 """
 from pydantic_settings import BaseSettings
 from typing import List
+from dotenv import load_dotenv
+load_dotenv()
 
 class Settings(BaseSettings):
     # Application
@@ -22,8 +24,8 @@ class Settings(BaseSettings):
     ]
     
     # Ollama LLM
-    OLLAMA_BASE_URL: str = "http://ollama:11434"
-    OLLAMA_MODEL: str = "mistral"
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "minimax-m2.5:cloud"
     OLLAMA_TIMEOUT: int = 120
     
     # ML Models
@@ -35,21 +37,26 @@ class Settings(BaseSettings):
     AUTO_COLLECT_DATA: bool = True
     
     # Session Management
-    SESSION_TIMEOUT: int = 3600  # 1 hour in seconds
+    SESSION_TIMEOUT: int = 3600
     
     # Quiz Settings
     DEFAULT_QUIZ_LENGTH: int = 10
-    DEFAULT_TIME_LIMIT: int = 1200  # 20 minutes in seconds
+    DEFAULT_TIME_LIMIT: int = 1200
     
     # Behavioral Analysis
     WEBCAM_ENABLED: bool = True
     BLINK_RATE_THRESHOLD: float = 30.0
     HEAD_MOVEMENT_THRESHOLD: float = 5.0
     GAZE_STABILITY_THRESHOLD: float = 0.6
-    
+
+    # Email Gmail
+    GMAIL_ADDRESS: str = ""
+    GMAIL_PASSWORD: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"
 
 # Global settings instance
 settings = Settings()

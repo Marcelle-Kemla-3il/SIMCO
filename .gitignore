@@ -255,3 +255,27 @@ htmlcov/
 # Documentation builds
 docs/_build/
 >>>>>>> origin/jordan
+
+# Images de debug
+backend/debug_capture_*.jpg
+
+# Anciens fichiers Vision supprimés
+simco/
+
+# Environnement virtuel
+simco_env/
+
+# Dataset et modèles
+backend/data/training/sessions.jsonl
+backend/data/models/*.pkl
+
+# Node modules
+quiz-frontend/node_modules/
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Fichiers sensibles
+backend/.env
+

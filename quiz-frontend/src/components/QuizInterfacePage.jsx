@@ -11,7 +11,8 @@ function QuizInterfacePage({
   loading = false,
   currentQuestion = 1,
   totalQuestions = 10,
-  onInteractionData, // New: callback for interaction metrics
+  onInteractionData,
+  videoRef, // ← reçu depuis QuizPage via usePhotoCapture
 }) {
   const [interactionMetrics] = useState({
     questionStartTime: Date.now(),
@@ -23,7 +24,6 @@ function QuizInterfacePage({
     currentHoverOption: null
   });
 
-  // Reset interaction metrics when question changes
   useEffect(() => {
     interactionMetrics.questionStartTime = Date.now();
     interactionMetrics.firstInteractionTime = null;
@@ -36,13 +36,9 @@ function QuizInterfacePage({
 
   const handleOptionClick = (index) => {
     const now = Date.now();
-    
-    // Track first interaction
     if (!interactionMetrics.firstInteractionTime) {
       interactionMetrics.firstInteractionTime = now;
     }
-    
-    // Track answer changes
     if (selectedOption !== null && selectedOption !== index) {
       interactionMetrics.answerChanges.push({
         from: selectedOption,
@@ -50,15 +46,11 @@ function QuizInterfacePage({
         timestamp: (now - interactionMetrics.questionStartTime) / 1000
       });
     }
-    
     setSelectedOption(index);
-    
-    // Send interaction data to parent
     if (onInteractionData) {
-      const timeToFirstClick = interactionMetrics.firstInteractionTime 
+      const timeToFirstClick = interactionMetrics.firstInteractionTime
         ? (interactionMetrics.firstInteractionTime - interactionMetrics.questionStartTime) / 1000
         : 0;
-      
       onInteractionData({
         time_to_first_click: parseFloat(timeToFirstClick.toFixed(2)),
         answer_changes: interactionMetrics.answerChanges.length,
@@ -71,19 +63,14 @@ function QuizInterfacePage({
 
   const handleOptionHover = (index, isEntering) => {
     const now = Date.now();
-    
     if (isEntering) {
       interactionMetrics.currentHoverStart = now;
       interactionMetrics.currentHoverOption = index;
     } else if (interactionMetrics.currentHoverStart && interactionMetrics.currentHoverOption === index) {
       const hoverDuration = now - interactionMetrics.currentHoverStart;
       interactionMetrics.totalHoverTime += hoverDuration;
-      
-      if (!interactionMetrics.hoverTimes[index]) {
-        interactionMetrics.hoverTimes[index] = 0;
-      }
+      if (!interactionMetrics.hoverTimes[index]) interactionMetrics.hoverTimes[index] = 0;
       interactionMetrics.hoverTimes[index] += hoverDuration;
-      
       interactionMetrics.currentHoverStart = null;
       interactionMetrics.currentHoverOption = null;
     }
@@ -91,6 +78,7 @@ function QuizInterfacePage({
 
   return (
     <div className="h-screen flex flex-col bg-gray-900">
+
       {/* Timer Bar */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex justify-between items-center shadow-lg flex-wrap gap-2 sm:gap-0">
         <div className="flex items-center space-x-2 sm:space-x-4">
@@ -106,15 +94,11 @@ function QuizInterfacePage({
         </div>
 
         <div className="flex items-center space-x-3 sm:space-x-6">
-          {/* Progress Indicator */}
           <div className="text-white text-right hidden sm:block">
             <div className="text-xs text-primary-100 mb-1">PROGRESSION</div>
             <div className="flex items-center space-x-2">
               <div className="w-24 sm:w-32 h-2 bg-primary-800 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-white transition-all duration-300"
-                  style={{ width: `${(currentQuestion / totalQuestions) * 100}%` }}
-                ></div>
+                <div className="h-full bg-white transition-all duration-300" style={{ width: `${(currentQuestion / totalQuestions) * 100}%` }}></div>
               </div>
               <span className="text-sm font-semibold">{Math.round((currentQuestion / totalQuestions) * 100)}%</span>
             </div>
@@ -138,7 +122,8 @@ function QuizInterfacePage({
 
       {/* Main Quiz Content */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-0 overflow-hidden">
-        {/* Left Side - Question */}
+
+        {/* Left Side — Question */}
         <div className="bg-white p-4 sm:p-6 md:p-12 flex flex-col justify-center overflow-auto">
           <div className="max-w-2xl">
             <div className="flex items-center space-x-2 sm:space-x-3 mb-4 sm:mb-8">
@@ -152,7 +137,6 @@ function QuizInterfacePage({
                 <p className="text-xs sm:text-sm text-gray-500">Lisez attentivement et choisissez votre réponse</p>
               </div>
             </div>
-
             <div className="bg-primary-50 border-l-4 border-primary-600 p-4 sm:p-6 md:p-8 rounded-r-xl">
               <p className="text-base sm:text-lg md:text-xl text-gray-800 leading-relaxed whitespace-pre-line font-medium">
                 {question.question}
@@ -161,7 +145,7 @@ function QuizInterfacePage({
           </div>
         </div>
 
-        {/* Right Side - Answer Options */}
+        {/* Right Side — Answers */}
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 md:p-12 flex flex-col justify-center overflow-auto border-l-0 lg:border-l-4 border-primary-600">
           <div className="max-w-2xl">
             <div className="mb-4 sm:mb-8">
@@ -184,9 +168,7 @@ function QuizInterfacePage({
                 >
                   <div className="flex items-center space-x-3 sm:space-x-4">
                     <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center font-bold text-base sm:text-lg transition-colors ${
-                      selectedOption === option.id
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-200 text-gray-600'
+                      selectedOption === option.id ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-600'
                     }`}>
                       {option.id}
                     </div>
@@ -207,7 +189,6 @@ function QuizInterfacePage({
               ))}
             </div>
 
-            {/* Submit Button */}
             <button
               onClick={submitAnswer}
               disabled={selectedOption === null || loading}
@@ -239,6 +220,58 @@ function QuizInterfacePage({
           </div>
         </div>
       </div>
+
+      {/* ─── Feed caméra — coin bas droite ─────────────────────────────────── */}
+      {videoRef && (
+        <div style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          width: 130,
+          height: 98,
+          borderRadius: 10,
+          overflow: 'hidden',
+          border: '2px solid #16a34a',
+          zIndex: 999,
+          background: '#000',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+        }}>
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              transform: 'scaleX(-1)', // effet miroir
+            }}
+          />
+          {/* Indicateur vert "actif" */}
+          <div style={{
+            position: 'absolute',
+            top: 6,
+            left: 6,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            background: 'rgba(0,0,0,0.5)',
+            borderRadius: 10,
+            padding: '2px 6px',
+          }}>
+            <div style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: '#22c55e',
+              animation: 'pulse 1.5s infinite',
+            }} />
+            <span style={{ color: '#fff', fontSize: 9, fontWeight: 600 }}>LIVE</span>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

@@ -1,43 +1,51 @@
-# SIMCO Project
-# Cognitive evaluation platform with behavioral analysis
+# ─── SIMCO — .gitignore ───────────────────────
 
-# Ignore ssimco folder (archived - not using Python vision code)
-_archive_ssimco/
+# Environnements virtuels
+simco_env/
+venv/
+env/
+.venv/
+ENV/
 
-# Backend services
-services/quiz_backend/__pycache__/
-services/quiz_backend/*.pyc
-services/quiz_backend/venv/
-services/quiz_backend/env/
+# Cache Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyc
+
+# Fichiers sensibles
+backend/.env
 services/quiz_backend/.env
-services/quiz_backend/data/training/*.jsonl
-services/quiz_backend/data/training/*.csv
-services/quiz_backend/data/models/*.pkl
-services/quiz_backend/data/models/*.joblib
-services/quiz_backend/*.log
-services/face_backend/__pycache__/
-services/face_backend/.venv*/
-services/confidence_backend/__pycache__/
-services/notification_backend/__pycache__/
-services/notification_backend/app/__pycache__/
 services/notification_backend/.env
-services/notification_backend/.env.local
+
+# Dataset et modèles ML
+backend/data/training/*.jsonl
+backend/data/training/*.csv
+backend/data/models/*.pkl
+backend/data/models/*.joblib
+
+# Images de debug
+backend/debug_capture_*.jpg
+
+# Anciens fichiers archivés
+simco/
+_archive_ssimco/
 
 # Frontend
 quiz-frontend/node_modules/
 quiz-frontend/dist/
 quiz-frontend/.env.local
-quiz-frontend/.env.*.local
+frontend/node_modules/
+frontend/dist/
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
-.DS_Store
 
 # OS
+.DS_Store
 Thumbs.db
 desktop.ini
 
@@ -45,10 +53,21 @@ desktop.ini
 *.log
 logs/
 
-# Testing
+# Tests
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Documentation builds
+# Distribution Python
+build/
+dist/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+
+# Documentation
 docs/_build/

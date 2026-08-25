@@ -128,8 +128,6 @@ docker-setup.ps1
 - Les modèles entraînés sont dans `services/quiz_backend/data/models/`
 - Scripts d'entraînement dans `services/quiz_backend/ml/`
 
-## Auteurs
-- Guy (MRGUY10)
 
 ## Licence
 MIT
